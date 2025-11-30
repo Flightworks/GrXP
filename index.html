@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>GrXP - Gestion des Risques</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/7893/7893979.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              risk: {
+                low: '#22c55e',      // Green / Usuel
+                medium: '#facc15',   // Yellow / Faible
+                high: '#f97316',     // Orange / Fort
+                critical: '#ef4444', // Red / Inacceptable
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background-color: #f8fafc; /* Slate 50 */
+      }
+      /* Hide scrollbar for Chrome, Safari and Opera */
+      .no-scrollbar::-webkit-scrollbar {
+          display: none;
+      }
+      /* Hide scrollbar for IE, Edge and Firefox */
+      .no-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+      }
+
+      /* Print Styles for PDF Generation */
+      @page {
+        size: A4;
+        margin: 1.5cm;
+      }
+
+      @media print {
+        body {
+          background-color: white;
+          color: black;
+          font-size: 12pt;
+        }
+        /* Hide UI elements */
+        nav, .no-print, button, input[type="text"].no-print, input[type="date"], .search-bar, textarea.no-print {
+          display: none !important;
+        }
+        /* Hide scrollbars and reset layout */
+        .overflow-y-auto, .overflow-x-auto {
+          overflow: visible !important;
+          height: auto !important;
+        }
+        
+        /* Force printing of backgrounds (colors) */
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        /* Logic to switch views based on print mode class on body/wrapper */
+        .print-only {
+          display: block !important;
+        }
+        
+        .print-hidden {
+          display: none !important;
+        }
+
+        /* Page Breaks */
+        .page-break {
+          page-break-before: always;
+        }
+        
+        .break-inside-avoid {
+          page-break-inside: avoid;
+        }
+
+        /* Typography adjustments for print */
+        p, h1, h2, h3, span {
+          color: #000 !important;
+        }
+        /* Restore specific colors for Risk levels */
+        .bg-red-600 { background-color: #dc2626 !important; color: white !important; }
+        .bg-orange-500 { background-color: #f97316 !important; color: white !important; }
+        .bg-yellow-400 { background-color: #facc15 !important; color: black !important; }
+        .bg-green-500 { background-color: #22c55e !important; color: white !important; }
+        
+        /* Ensure shadows are removed in print for cleaner look */
+        .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl {
+          box-shadow: none !important;
+          border: 1px solid #e2e8f0 !important; /* Slate-200 */
+        }
+      }
+
+      .print-only {
+        display: none;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-900">
+    <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('SW registered: ', registration);
+            })
+            .catch(registrationError => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>

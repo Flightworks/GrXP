@@ -1,0 +1,5 @@
+{
+  "name": "GrXP - Gestion des Risques Essais/XP",
+  "description": "Application PWA pour l'évaluation et la gestion des risques des essais en vol (Matrice Gravité/Occurrence).",
+  "requestFramePermissions": []
+}
