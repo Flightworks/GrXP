@@ -163,7 +163,7 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
                         className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-800 font-bold bg-blue-50 px-3 py-1.5 rounded-full transition-colors"
                     >
                         <BookOpen className="w-3 h-3" />
-                        Catalogue
+                        Importer du catalogue
                     </button>
                 </div>
                 <textarea 

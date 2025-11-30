@@ -4,7 +4,7 @@ import { getCatalogEntries, saveCatalogEntry, deleteCatalogEntry } from '../serv
 import { Plus, Search, Trash2, Edit2, AlertTriangle, Save, X, BookOpen, ShieldCheck } from 'lucide-react';
 import { GRAVITY_OPTIONS, OCCURRENCE_OPTIONS, calculateRiskLevel, getRiskColor } from '../constants';
 
-const CatalogManager: React.FC = () => {
+export const CatalogManager: React.FC = () => {
   const [entries, setEntries] = useState<RiskCatalogEntry[]>([]);
   const [search, setSearch] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -81,7 +81,7 @@ const CatalogManager: React.FC = () => {
                     type="text" 
                     value={currentEntry.title}
                     onChange={(e) => setCurrentEntry({...currentEntry, title: e.target.value})}
-                    className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full p-2 bg-white text-slate-900 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
                     placeholder="Ex: Panne moteur"
                  />
              </div>
@@ -91,7 +91,7 @@ const CatalogManager: React.FC = () => {
                     type="text" 
                     value={currentEntry.category}
                     onChange={(e) => setCurrentEntry({...currentEntry, category: e.target.value})}
-                    className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full p-2 bg-white text-slate-900 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
                     placeholder="Ex: Technique"
                  />
              </div>
@@ -103,7 +103,7 @@ const CatalogManager: React.FC = () => {
                 rows={3}
                 value={currentEntry.dreadedEvent}
                 onChange={(e) => setCurrentEntry({...currentEntry, dreadedEvent: e.target.value})}
-                className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full p-2 bg-white text-slate-900 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
              />
           </div>
 
@@ -113,7 +113,7 @@ const CatalogManager: React.FC = () => {
                 rows={4}
                 value={currentEntry.mitigationMeasures}
                 onChange={(e) => setCurrentEntry({...currentEntry, mitigationMeasures: e.target.value})}
-                className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full p-2 bg-white text-slate-900 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
              />
           </div>
 
@@ -123,7 +123,7 @@ const CatalogManager: React.FC = () => {
                 <select 
                     value={currentEntry.defaultGravity}
                     onChange={(e) => setCurrentEntry({...currentEntry, defaultGravity: Number(e.target.value) as Gravity})}
-                    className="w-full p-2 border border-slate-300 rounded"
+                    className="w-full p-2 bg-white text-slate-900 border border-slate-300 rounded appearance-none"
                 >
                     {GRAVITY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
@@ -133,7 +133,7 @@ const CatalogManager: React.FC = () => {
                 <select 
                     value={currentEntry.defaultOccurrence}
                     onChange={(e) => setCurrentEntry({...currentEntry, defaultOccurrence: e.target.value as Occurrence})}
-                    className="w-full p-2 border border-slate-300 rounded"
+                    className="w-full p-2 bg-white text-slate-900 border border-slate-300 rounded appearance-none"
                 >
                     {OCCURRENCE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
@@ -181,7 +181,7 @@ const CatalogManager: React.FC = () => {
                 <input 
                     type="text" 
                     placeholder="Rechercher un modèle..." 
-                    className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                    className="w-full pl-9 pr-4 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none text-sm appearance-none"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                 />
@@ -281,8 +281,5 @@ const CatalogManager: React.FC = () => {
             )}
         </div>
       </div>
-    </div>
-  );
+    );
 };
-
-export default CatalogManager;

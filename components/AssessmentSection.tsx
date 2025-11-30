@@ -88,6 +88,22 @@ const AssessmentSection: React.FC<AssessmentSectionProps> = ({ title, type, data
       <div className="p-6">
         {children}
 
+        {/* Exposition & Detectability - Moved to top to be before Matrix visually */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 border-b border-slate-100 pb-6">
+            <SegmentedControl 
+                label="Exposition" 
+                value={data.exposition} 
+                options={EXPOSITION_OPTIONS} 
+                onSelect={(v) => handleUpdate('exposition', v)} 
+            />
+            <SegmentedControl 
+                label="Détectabilité" 
+                value={data.detectability} 
+                options={DETECTABILITY_OPTIONS} 
+                onSelect={(v) => handleUpdate('detectability', v)} 
+            />
+        </div>
+
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
             
             {/* Matrix Visualization - Ordered first */}
@@ -103,7 +119,7 @@ const AssessmentSection: React.FC<AssessmentSectionProps> = ({ title, type, data
                 />
             </div>
 
-            {/* Input Controls - Ordered second */}
+            {/* Gravity & Occurrence Controls - Ordered second */}
             <div className="xl:col-span-6 flex flex-col justify-center order-2">
                 <div className="grid grid-cols-1 gap-1">
                     <SegmentedControl 
@@ -117,23 +133,6 @@ const AssessmentSection: React.FC<AssessmentSectionProps> = ({ title, type, data
                         value={data.occurrence} 
                         options={OCCURRENCE_OPTIONS} 
                         onSelect={(v) => handleUpdate('occurrence', v)} 
-                    />
-                </div>
-                
-                <div className="h-px bg-slate-100 my-6"></div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <SegmentedControl 
-                        label="Exposition" 
-                        value={data.exposition} 
-                        options={EXPOSITION_OPTIONS} 
-                        onSelect={(v) => handleUpdate('exposition', v)} 
-                    />
-                    <SegmentedControl 
-                        label="Détectabilité" 
-                        value={data.detectability} 
-                        options={DETECTABILITY_OPTIONS} 
-                        onSelect={(v) => handleUpdate('detectability', v)} 
                     />
                 </div>
             </div>

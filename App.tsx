@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Dashboard from './pages/Dashboard';
 import RiskForm from './pages/RiskForm';
-import CatalogManager from './pages/CatalogManager';
+import { CatalogManager } from './pages/CatalogManager';
 import { Plane, BookOpen, Home, PlusCircle, Download } from 'lucide-react';
 
 const App: React.FC = () => {
