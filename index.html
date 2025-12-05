@@ -8,9 +8,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>GrXP - Gestion des Risques</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" href="/icon.png">
-  <link rel="apple-touch-icon" href="/icon.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -170,11 +170,11 @@
 
 <body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-900">
   <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
+  <script type="module" src="./index.tsx"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('sw.js')
           .then(registration => {
             console.log('SW registered: ', registration);
           })
