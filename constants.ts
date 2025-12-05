@@ -51,18 +51,27 @@ export const calculateRiskLevel = (g: Gravity, o: Occurrence): RiskLevel => {
   return RiskLevel.Usuel;
 };
 
-export const getRiskColor = (level: RiskLevel): string => {
+export const getRiskTheme = (level: RiskLevel) => {
   switch (level) {
-    case RiskLevel.Inacceptable: return 'bg-red-600 text-white border-red-800';
-    case RiskLevel.Fort: return 'bg-orange-500 text-white border-orange-700';
-    case RiskLevel.Faible: return 'bg-yellow-300 text-slate-900 border-yellow-500';
-    case RiskLevel.Usuel: return 'bg-green-500 text-white border-green-700';
-    default: return 'bg-gray-200';
+    case RiskLevel.Inacceptable:
+      return { bg: 'bg-red-600', text: 'text-white', border: 'border-red-800', full: 'bg-red-600 text-white border-red-800', lightBg: 'bg-red-100' };
+    case RiskLevel.Fort:
+      return { bg: 'bg-orange-500', text: 'text-white', border: 'border-orange-700', full: 'bg-orange-500 text-white border-orange-700', lightBg: 'bg-orange-100' };
+    case RiskLevel.Faible:
+      return { bg: 'bg-yellow-300', text: 'text-slate-900', border: 'border-yellow-500', full: 'bg-yellow-300 text-slate-900 border-yellow-500', lightBg: 'bg-yellow-50' };
+    case RiskLevel.Usuel:
+      return { bg: 'bg-green-500', text: 'text-white', border: 'border-green-700', full: 'bg-green-500 text-white border-green-700', lightBg: 'bg-green-50' };
+    default:
+      return { bg: 'bg-gray-200', text: 'text-gray-800', border: 'border-gray-300', full: 'bg-gray-200', lightBg: 'bg-white' };
   }
 };
 
+export const getRiskColor = (level: RiskLevel): string => {
+  return getRiskTheme(level).full;
+};
+
 export const getRiskBgClass = (level: RiskLevel): string => {
-   switch (level) {
+  switch (level) {
     case RiskLevel.Inacceptable: return 'bg-red-100';
     case RiskLevel.Fort: return 'bg-orange-100';
     case RiskLevel.Faible: return 'bg-yellow-50';

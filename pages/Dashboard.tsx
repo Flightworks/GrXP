@@ -6,7 +6,6 @@ import SynthesisMatrix from '../components/SynthesisMatrix';
 import CatalogModal from '../components/CatalogModal';
 import { calculateRiskLevel } from '../constants';
 import FullReportPrint from '../components/FullReportPrint';
-// @ts-ignore
 import html2pdf from 'html2pdf.js';
 
 interface DashboardProps {
@@ -43,34 +42,45 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     if (printMode === 'download') {
       const element = document.getElementById('report-content');
       if (element) {
+        // Sanitize filename to ensure it works across browsers
+        const safeName = (context.studyName || 'Etude').replace(/[^a-z0-9\-_]/gi, '_');
         const opt = {
           margin: 10,
-          filename: `Rapport_GrXP_${context.studyName || 'Etude'}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
+          filename: `Rapport_GrXP_${safeName}.pdf`,
+          image: { type: 'jpeg' as const, quality: 0.98 },
           html2canvas: { scale: 2 },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
         };
 
-        // Wait for render
-        setTimeout(() => {
-          html2pdf().set(opt).from(element).save().then(() => {
+        // Allow render to finish
+        requestAnimationFrame(() => {
+          // Use output('blob') to manually handle the download which guarantees the filename
+          html2pdf().set(opt).from(element).output('blob').then((blob: Blob) => {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = opt.filename;
+            document.body.appendChild(link); // Required for some browsers
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
             setPrintMode('none');
           });
-        }, 500);
+        });
       }
       return;
     }
 
-    // We use a timeout to allow React to flush the state change and render 
-    // the print-specific components (FullReportPrint) into the DOM.
-    const timer = setTimeout(() => {
-      window.print();
-      // After the print dialog closes (or immediately in non-blocking browsers),
-      // we reset the state to hide the print components.
-      setPrintMode('none');
-    }, 500);
+    // Browser print
+    // Use requestAnimationFrame to ensure the DOM has updated with the 'print-only' elements
+    requestAnimationFrame(() => {
+      // Small delay still helpful for some browser render cycles, but RAF is cleaner
+      setTimeout(() => {
+        window.print();
+        setPrintMode('none');
+      }, 100);
+    });
 
-    return () => clearTimeout(timer);
   }, [printMode, context.studyName]);
 
   const handleContextChange = (field: keyof StudyContext, value: string) => {

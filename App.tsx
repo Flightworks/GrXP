@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Dashboard from './pages/Dashboard';
 import RiskForm from './pages/RiskForm';
 import { CatalogManager } from './pages/CatalogManager';
-import { Plane, BookOpen, Home, PlusCircle, Download } from 'lucide-react';
+import { Plane, BookOpen, Home, PlusCircle, Download, LayoutDashboard } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'edit' | 'catalog'>('dashboard');
@@ -61,8 +61,9 @@ const App: React.FC = () => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => navigate('dashboard')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${currentPage === 'dashboard' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${currentPage === 'dashboard' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
               >
+                <LayoutDashboard className="w-4 h-4" />
                 Etude
               </button>
               <button
