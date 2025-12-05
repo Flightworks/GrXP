@@ -55,223 +55,220 @@ const MatrixGrid: React.FC<MatrixGridProps> = ({
   const renderArrow = () => {
     if (!initialGravity || !initialOccurrence) return null;
 
-    const renderArrow = () => {
-      if (!initialGravity || !initialOccurrence) return null;
+    // Don't render if same position
+    if (initialGravity === currentGravity && initialOccurrence === currentOccurrence) return null;
 
-      // Don't render if same position
-      if (initialGravity === currentGravity && initialOccurrence === currentOccurrence) return null;
+    // Coordinate Mapping for 4x4 grid with gaps
+    // These percentages (11, 37, 63, 89) closely match the center of cells
+    // in a layout with 'w-12'/'w-16' cells and 'gap-2' spacing.
+    const COORD_MAP = [11, 37, 63, 89];
 
-      // Coordinate Mapping for 4x4 grid with gaps
-      // These percentages (11, 37, 63, 89) closely match the center of cells
-      // in a layout with 'w-12'/'w-16' cells and 'gap-2' spacing.
-      const COORD_MAP = [11, 37, 63, 89];
+    const startX = COORD_MAP[getColIndex(initialOccurrence)];
+    const startY = COORD_MAP[getRowIndex(initialGravity)];
+    const endX = COORD_MAP[getColIndex(currentOccurrence)];
+    const endY = COORD_MAP[getRowIndex(currentGravity)];
 
-      const startX = COORD_MAP[getColIndex(initialOccurrence)];
-      const startY = COORD_MAP[getRowIndex(initialGravity)];
-      const endX = COORD_MAP[getColIndex(currentOccurrence)];
-      const endY = COORD_MAP[getRowIndex(currentGravity)];
+    // Orthogonal Path Logic (L-Shape) with rounded corner
+    // We prioritize moving Horizontally (Occurrence reduction) then Vertically (Gravity reduction)
 
-      // Orthogonal Path Logic (L-Shape) with rounded corner
-      // We prioritize moving Horizontally (Occurrence reduction) then Vertically (Gravity reduction)
+    let pathD = '';
+    const radius = 8; // Corner radius
 
-      let pathD = '';
-      const radius = 8; // Corner radius
+    // Determine direction for arrowhead
+    // If we move vertically at the end (L-shape or vertical line), direction is vertical
+    // If we only move horizontally (straight line), direction is horizontal
+    let arrowAngle = 0; // 0 = pointing right (default)
 
-      // Determine direction for arrowhead
-      // If we move vertically at the end (L-shape or vertical line), direction is vertical
-      // If we only move horizontally (straight line), direction is horizontal
-      let arrowAngle = 0; // 0 = pointing right (default)
-
-      // If straight line
-      if (startX === endX || startY === endY) {
-        pathD = `M${startX},${startY} L${endX},${endY}`;
-        if (startY === endY) {
-          // Horizontal
-          arrowAngle = endX > startX ? 0 : 180;
-        } else {
-          // Vertical
-          arrowAngle = endY > startY ? 90 : 270;
-        }
+    // If straight line
+    if (startX === endX || startY === endY) {
+      pathD = `M${startX},${startY} L${endX},${endY}`;
+      if (startY === endY) {
+        // Horizontal
+        arrowAngle = endX > startX ? 0 : 180;
       } else {
-        // L-Shape: Start -> (CornerX, CornerY) -> End
-        // We move Horizontal first (change X), then Vertical (change Y)
-        // Corner is at (endX, startY)
-        const cornerX = endX;
-        const cornerY = startY;
-
-        // Directions for corner calculation
-        const dirX = endX > startX ? 1 : -1;
-        const dirY = endY > startY ? 1 : -1;
-
-        // Clamp radius if segments are too short
-        const seg1Len = Math.abs(endX - startX);
-        const seg2Len = Math.abs(endY - startY);
-        const r = Math.min(radius, seg1Len / 2, seg2Len / 2);
-
-        // Start point
-        pathD = `M${startX},${startY}`;
-
-        // Line to start of curve (Horizontal move)
-        pathD += ` L${cornerX - (dirX * r)},${cornerY}`;
-
-        // Quadratic Curve to completion of turn
-        pathD += ` Q${cornerX},${cornerY} ${cornerX},${cornerY + (dirY * r)}`;
-
-        // Line to end (Vertical move)
-        pathD += ` L${endX},${endY}`;
-
-        // The last segment is always vertical in this L-shape logic
+        // Vertical
         arrowAngle = endY > startY ? 90 : 270;
       }
+    } else {
+      // L-Shape: Start -> (CornerX, CornerY) -> End
+      // We move Horizontal first (change X), then Vertical (change Y)
+      // Corner is at (endX, startY)
+      const cornerX = endX;
+      const cornerY = startY;
 
-      // Manual Arrowhead Points (Equilateralish triangle pointing right at 0,0)
-      // Points: (0,0), (-5, -2.5), (-5, 2.5) relative to tip
-      // We need to rotate these points and translate to (endX, endY)
-      const arrowSize = 5;
-      const rad = (arrowAngle * Math.PI) / 180;
-      const cos = Math.cos(rad);
-      const sin = Math.sin(rad);
+      // Directions for corner calculation
+      const dirX = endX > startX ? 1 : -1;
+      const dirY = endY > startY ? 1 : -1;
 
-      const transformPoint = (x: number, y: number) => {
-        // Rotate
-        const rx = x * cos - y * sin;
-        const ry = x * sin + y * cos;
-        // Translate
-        return `${endX + rx},${endY + ry}`;
-      };
+      // Clamp radius if segments are too short
+      const seg1Len = Math.abs(endX - startX);
+      const seg2Len = Math.abs(endY - startY);
+      const r = Math.min(radius, seg1Len / 2, seg2Len / 2);
 
-      const tip = transformPoint(0, 0); // Should be endX, endY
-      const back1 = transformPoint(-arrowSize, -arrowSize / 2);
-      const back2 = transformPoint(-arrowSize, arrowSize / 2);
+      // Start point
+      pathD = `M${startX},${startY}`;
 
-      const arrowHeadPath = `M${tip} L${back1} L${back2} Z`;
+      // Line to start of curve (Horizontal move)
+      pathD += ` L${cornerX - (dirX * r)},${cornerY}`;
 
-      return (
-        <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {/* Shadow/Glow effect underlying path - simplified for PDF */}
-          <path
-            d={pathD}
-            stroke="white"
-            strokeWidth="4"
-            opacity="0.6"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+      // Quadratic Curve to completion of turn
+      pathD += ` Q${cornerX},${cornerY} ${cornerX},${cornerY + (dirY * r)}`;
 
-          {/* Main Arrow Line */}
-          <path
-            d={pathD}
-            stroke="#84cc16"
-            strokeWidth="2.5"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+      // Line to end (Vertical move)
+      pathD += ` L${endX},${endY}`;
 
-          {/* Start Dot */}
-          <circle cx={startX} cy={startY} r="2" fill="#84cc16" stroke="white" strokeWidth="0.5" />
+      // The last segment is always vertical in this L-shape logic
+      arrowAngle = endY > startY ? 90 : 270;
+    }
 
-          {/* End Arrowhead */}
-          <path d={arrowHeadPath} fill="#84cc16" stroke="none" />
-        </svg>
-      );
+    // Manual Arrowhead Points (Equilateralish triangle pointing right at 0,0)
+    // Points: (0,0), (-5, -2.5), (-5, 2.5) relative to tip
+    // We need to rotate these points and translate to (endX, endY)
+    const arrowSize = 5;
+    const rad = (arrowAngle * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    const transformPoint = (x: number, y: number) => {
+      // Rotate
+      const rx = x * cos - y * sin;
+      const ry = x * sin + y * cos;
+      // Translate
+      return `${endX + rx},${endY + ry}`;
     };
 
-    return (
-      <div className="flex flex-col items-center select-none w-full max-w-sm mx-auto">
+    const tip = transformPoint(0, 0); // Should be endX, endY
+    const back1 = transformPoint(-arrowSize, -arrowSize / 2);
+    const back2 = transformPoint(-arrowSize, arrowSize / 2);
 
-        {/* Selection Card (Top) */}
-        <div className="mb-8 w-full bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex flex-col items-center justify-center text-center transition-all relative overflow-hidden group">
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-            {hovered ? "PRÉVISUALISATION" : "SÉLECTION"}
-          </div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="font-bold text-slate-800 text-base md:text-lg leading-tight transition-all duration-300">{gravityLabel}</span>
-            <span className="text-slate-300 font-light text-xl">/</span>
-            <span className="font-bold text-slate-800 text-base md:text-lg leading-tight transition-all duration-300">{occurrenceLabel}</span>
-          </div>
-          <div className={`text-[11px] font-black uppercase px-4 py-1 rounded-full transform transition-all tracking-wider ${pillColor}`}>
-            {riskLevel.toUpperCase()}
+    const arrowHeadPath = `M${tip} L${back1} L${back2} Z`;
+
+    return (
+      <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+        {/* Shadow/Glow effect underlying path - simplified for PDF */}
+        <path
+          d={pathD}
+          stroke="white"
+          strokeWidth="4"
+          opacity="0.6"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Main Arrow Line */}
+        <path
+          d={pathD}
+          stroke="#84cc16"
+          strokeWidth="2.5"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Start Dot */}
+        <circle cx={startX} cy={startY} r="2" fill="#84cc16" stroke="white" strokeWidth="0.5" />
+
+        {/* End Arrowhead */}
+        <path d={arrowHeadPath} fill="#84cc16" stroke="none" />
+      </svg>
+    );
+  };
+
+  return (
+    <div className="flex flex-col items-center select-none w-full max-w-sm mx-auto">
+
+      {/* Selection Card (Top) */}
+      <div className="mb-8 w-full bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex flex-col items-center justify-center text-center transition-all relative overflow-hidden group">
+        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+          {hovered ? "PRÉVISUALISATION" : "SÉLECTION"}
+        </div>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="font-bold text-slate-800 text-base md:text-lg leading-tight transition-all duration-300">{gravityLabel}</span>
+          <span className="text-slate-300 font-light text-xl">/</span>
+          <span className="font-bold text-slate-800 text-base md:text-lg leading-tight transition-all duration-300">{occurrenceLabel}</span>
+        </div>
+        <div className={`text-[11px] font-black uppercase px-4 py-1 rounded-full transform transition-all tracking-wider ${pillColor}`}>
+          {riskLevel.toUpperCase()}
+        </div>
+      </div>
+
+      {/* Matrix Container */}
+      <div className="relative p-6 bg-slate-100 rounded-3xl shadow-inner mx-auto">
+
+        {/* Y Axis Label (Vertical Text) */}
+        <div className="absolute left-1 top-0 bottom-0 flex items-center justify-center w-6">
+          <div className="-rotate-90 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">
+            Gravité
           </div>
         </div>
 
-        {/* Matrix Container */}
-        <div className="relative p-6 bg-slate-100 rounded-3xl shadow-inner mx-auto">
+        <div className="flex flex-col relative">
 
-          {/* Y Axis Label (Vertical Text) */}
-          <div className="absolute left-1 top-0 bottom-0 flex items-center justify-center w-6">
-            <div className="-rotate-90 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">
-              Gravité
-            </div>
+          <div className="flex mb-2 ml-8">
+            {/* X Axis Header */}
+            {cols.map(c => {
+              const isHoveredCol = hovered?.o === c;
+              const label = OCCURRENCE_OPTIONS.find(o => o.value === c)?.label.split('(')[0].trim();
+
+              return (
+                <div key={c} className="relative flex-1 w-12 md:w-16 flex justify-center">
+                  <span className={`text-xs font-bold transition-colors duration-200 ${isHoveredCol ? 'text-blue-600 scale-110' : 'text-slate-400'}`}>
+                    {c}
+                  </span>
+                  {/* Floating Label on Hover */}
+                  <div className={`absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap transition-all duration-200 pointer-events-none z-30 ${isHoveredCol ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}`}>
+                    {label}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          <div className="flex flex-col relative">
-
-            <div className="flex mb-2 ml-8">
-              {/* X Axis Header */}
-              {cols.map(c => {
-                const isHoveredCol = hovered?.o === c;
-                const label = OCCURRENCE_OPTIONS.find(o => o.value === c)?.label.split('(')[0].trim();
-
-                return (
-                  <div key={c} className="relative flex-1 w-12 md:w-16 flex justify-center">
-                    <span className={`text-xs font-bold transition-colors duration-200 ${isHoveredCol ? 'text-blue-600 scale-110' : 'text-slate-400'}`}>
-                      {c}
-                    </span>
-                    {/* Floating Label on Hover */}
-                    <div className={`absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap transition-all duration-200 pointer-events-none z-30 ${isHoveredCol ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}`}>
-                      {label}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="relative">
-              {/* The Arrow Layer */}
-              <div className="absolute inset-0 left-8 z-20 pointer-events-none">
-                <div className="relative w-full h-full">
-                  {renderArrow()}
-                </div>
+          <div className="relative">
+            {/* The Arrow Layer */}
+            <div className="absolute inset-0 left-8 z-20 pointer-events-none">
+              <div className="relative w-full h-full">
+                {renderArrow()}
               </div>
-              {rows.map(row => (
-                <div key={row} className="flex mb-2 last:mb-0 items-center">
-                  {/* Row Header */}
-                  <div className="relative w-8 flex justify-end pr-3">
-                    {/* Floating Label on Hover */}
-                    <div className={`absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap transition-all duration-200 pointer-events-none z-30 ${hovered?.g === row ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-1'}`}>
-                      {GRAVITY_OPTIONS.find(g => g.value === row)?.label.split('(')[0].trim()}
-                      <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-slate-800"></div>
-                    </div>
-
-                    <span className={`text-xs font-bold transition-colors duration-200 ${hovered?.g === row ? 'text-blue-600 scale-110' : 'text-slate-400'}`}>
-                      {row}
-                    </span>
+            </div>
+            {rows.map(row => (
+              <div key={row} className="flex mb-2 last:mb-0 items-center">
+                {/* Row Header */}
+                <div className="relative w-8 flex justify-end pr-3">
+                  {/* Floating Label on Hover */}
+                  <div className={`absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap transition-all duration-200 pointer-events-none z-30 ${hovered?.g === row ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-1'}`}>
+                    {GRAVITY_OPTIONS.find(g => g.value === row)?.label.split('(')[0].trim()}
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-slate-800"></div>
                   </div>
 
-                  {/* Cells */}
-                  <div className="flex gap-2">
-                    {cols.map(col => {
-                      const level = calculateRiskLevel(row, col);
-                      const baseColor = getRiskColor(level);
-                      const bgColorClass = baseColor.split(' ')[0]; // Extract bg color
+                  <span className={`text-xs font-bold transition-colors duration-200 ${hovered?.g === row ? 'text-blue-600 scale-110' : 'text-slate-400'}`}>
+                    {row}
+                  </span>
+                </div>
 
-                      const isSelected = row === currentGravity && col === currentOccurrence;
-                      const isHovered = hovered?.g === row && hovered?.o === col;
-                      const isInitial = initialGravity === row && initialOccurrence === col;
+                {/* Cells */}
+                <div className="flex gap-2">
+                  {cols.map(col => {
+                    const level = calculateRiskLevel(row, col);
+                    const baseColor = getRiskColor(level);
+                    const bgColorClass = baseColor.split(' ')[0]; // Extract bg color
 
-                      // Dim others when hovering
-                      const isDimmed = hovered && !isHovered;
+                    const isSelected = row === currentGravity && col === currentOccurrence;
+                    const isHovered = hovered?.g === row && hovered?.o === col;
+                    const isInitial = initialGravity === row && initialOccurrence === col;
 
-                      return (
-                        <div
-                          key={`${row}-${col}`}
-                          onMouseEnter={() => setHovered({ g: row, o: col })}
-                          onMouseLeave={() => setHovered(null)}
-                          onClick={() => onCellClick && onCellClick(row, col)}
-                          className={`
+                    // Dim others when hovering
+                    const isDimmed = hovered && !isHovered;
+
+                    return (
+                      <div
+                        key={`${row}-${col}`}
+                        onMouseEnter={() => setHovered({ g: row, o: col })}
+                        onMouseLeave={() => setHovered(null)}
+                        onClick={() => onCellClick && onCellClick(row, col)}
+                        className={`
                                             ${cellSize} 
                                             ${bgColorClass}
                                             rounded-lg md:rounded-xl
@@ -283,30 +280,30 @@ const MatrixGrid: React.FC<MatrixGridProps> = ({
                                             ${isInitial && !isSelected ? 'opacity-80' : ''} 
                                             ${isDimmed ? 'opacity-40 blur-[0.5px]' : 'opacity-100'}
                                         `}
-                        >
-                          {isSelected && (
-                            <div className="w-2 h-2 md:w-3 md:h-3 bg-slate-900 rounded-full shadow-sm"></div>
-                          )}
-                          {/* Ghost dot for initial if different */}
-                          {isInitial && !isSelected && (
-                            <div className="w-1.5 h-1.5 bg-slate-900/30 rounded-full"></div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                      >
+                        {isSelected && (
+                          <div className="w-2 h-2 md:w-3 md:h-3 bg-slate-900 rounded-full shadow-sm"></div>
+                        )}
+                        {/* Ghost dot for initial if different */}
+                        {isInitial && !isSelected && (
+                          <div className="w-1.5 h-1.5 bg-slate-900/30 rounded-full"></div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
 
-            {/* X Axis Label */}
-            <div className="flex justify-center mt-3 ml-8">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Occurrence</span>
-            </div>
+          {/* X Axis Label */}
+          <div className="flex justify-center mt-3 ml-8">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Occurrence</span>
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
-  export default MatrixGrid;
+export default MatrixGrid;
