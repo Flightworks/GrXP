@@ -19,3 +19,12 @@ declare module 'html2pdf.js' {
     function html2pdf(): Html2PdfWorker;
     export default html2pdf;
 }
+
+interface BeforeInstallPromptEvent extends Event {
+    readonly platforms: string[];
+    readonly userChoice: Promise<{
+        outcome: 'accepted' | 'dismissed';
+        platform: string;
+    }>;
+    prompt(): Promise<void>;
+}
