@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import RiskForm from './pages/RiskForm';
 import { CatalogManager } from './pages/CatalogManager';
 import PageTransition from './components/PageTransition';
+import Footer from './components/Footer';
 import { usePWAInstall } from './hooks/usePWAInstall';
 
 // Wrapper to extract params for RiskForm
@@ -156,6 +157,7 @@ const App: React.FC = () => {
           </button>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

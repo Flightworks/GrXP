@@ -28,3 +28,6 @@ interface BeforeInstallPromptEvent extends Event {
     }>;
     prompt(): Promise<void>;
 }
+
+declare const __APP_VERSION__: string;
+declare const __APP_LICENSE__: string;
