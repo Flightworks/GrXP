@@ -52,7 +52,7 @@ const App: React.FC = () => {
               onClick={() => navigate('dashboard')}
             >
               <img
-                src="/icon.png"
+                src="icon.png"
                 alt="GrXP Logo"
                 className="w-9 h-9 rounded-xl shadow-lg shadow-slate-200 group-hover:scale-105 transition-transform"
               />
