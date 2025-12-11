@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { RiskEntry, RiskCatalogEntry } from '../types';
 import { saveRisk, getRiskById, createEmptyRisk } from '../services/storage';
 import AssessmentSection from '../components/AssessmentSection';
@@ -210,18 +211,34 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
 
             </div>
 
-            {/* Sticky Bottom Footer for Residual Risk */}
-            <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 p-4 md:pl-20 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.1)]">
-                <div className="max-w-4xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        <span className="text-xs md:text-sm font-bold uppercase text-slate-800 tracking-wider">Risque Résiduel</span>
+            {/* Rigid Bottom Footer for Residual Risk & Save */}
+            {createPortal(
+                <div className="fixed bottom-0 left-0 right-0 z-[100] bg-white/90 backdrop-blur-md border-t border-slate-200 p-4 shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.1)] print-hidden">
+                    <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className={`min-w-[2.5rem] w-auto px-3 h-10 rounded-xl flex items-center justify-center text-sm font-black uppercase text-white shadow-sm ${residualRiskTheme.bg}`}>
+                                {risk.residualRisk.computedLevel}
+                            </div>
+                            <div className="text-left hidden xs:block">
+                                <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Risque Résiduel</span>
+                                <div className="flex items-center gap-1.5">
+                                    <div className={`w-2 h-2 rounded-full ${residualRiskTheme.bg}`}></div>
+                                    <span className="text-xs font-bold text-slate-700 leading-none">Niveau Calculé</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleSave}
+                            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg shadow-slate-200 transition-all font-bold text-sm transform active:scale-95 hover:-translate-y-0.5"
+                        >
+                            <Save className="w-4 h-4" />
+                            <span>Enregistrer</span>
+                        </button>
                     </div>
-                    <div className={`px-4 py-1.5 rounded-lg text-xs md:text-sm font-black uppercase tracking-wider text-white shadow-md ${residualRiskTheme.bg}`}>
-                        {risk.residualRisk.computedLevel}
-                    </div>
-                </div>
-            </div>
+                </div>,
+                document.body
+            )}
 
             {/* Toast Notification */}
             <div className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-500 ${showToast ? 'translate-y-0 opacity-100' : '-translate-y-8 opacity-0 pointer-events-none'}`}>

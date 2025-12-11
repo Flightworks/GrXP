@@ -194,7 +194,7 @@ const MatrixGrid: React.FC<MatrixGridProps> = ({
       </div>
 
       {/* Matrix Container */}
-      <div className="relative p-6 bg-slate-100 rounded-3xl shadow-inner mx-auto">
+      <div className="relative p-6 bg-slate-100 rounded-3xl shadow-inner mx-auto w-fit">
 
         {/* Y Axis Label (Vertical Text) */}
         <div className="absolute left-1 top-0 bottom-0 flex items-center justify-center w-6">
