@@ -59,9 +59,23 @@ const MatrixGrid: React.FC<MatrixGridProps> = ({
     if (initialGravity === currentGravity && initialOccurrence === currentOccurrence) return null;
 
     // Coordinate Mapping for 4x4 grid with gaps
-    // These percentages (11, 37, 63, 89) closely match the center of cells
-    // in a layout with 'w-12'/'w-16' cells and 'gap-2' spacing.
-    const COORD_MAP = [11, 37, 63, 89];
+    // Precision mapping based on cell size / gap ratio
+    // sm: w-8 (32px), gap-2 (8px). Ratio 4:1. Total 9.5 units. Centers: 1, 3.5, 6, 8.5
+    // md: w-12 (48px), gap-2 (8px). Ratio 6:1. Total 13.5 units. Centers: 1.5, 5, 8.5, 12
+    // lg: w-16 (64px), gap-2 (8px). Ratio 8:1. Total 17.5 units. Centers: 2, 6.5, 11, 15.5
+
+    let COORD_MAP = [11, 37, 63, 89]; // Default fallback
+
+    if (size === 'sm') {
+      COORD_MAP = [10.5, 36.8, 63.2, 89.5];
+    } else if (size === 'md') {
+      // Assuming md:w-16 acts as w-12 on smaller screens but logic is complex. 
+      // Compromise or detect? 'md' is default, which the original [11, 37, 63, 89] was tuned for (w-12).
+      // Let's keep the original for 'md' as it works on the web.
+      COORD_MAP = [11, 37, 63, 89];
+    } else { // lg
+      COORD_MAP = [11.4, 37.1, 62.9, 88.6];
+    }
 
     const startX = COORD_MAP[getColIndex(initialOccurrence)];
     const startY = COORD_MAP[getRowIndex(initialGravity)];

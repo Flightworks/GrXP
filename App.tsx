@@ -1,10 +1,11 @@
 import React from 'react';
 import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { Plane, BookOpen, Home, PlusCircle, Download, LayoutDashboard } from 'lucide-react';
+import { Plane, BookOpen, Home, PlusCircle, Download, LayoutDashboard, Database } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import RiskForm from './pages/RiskForm';
 import { CatalogManager } from './pages/CatalogManager';
+import DataPage from './pages/DataPage';
 import PageTransition from './components/PageTransition';
 import Footer from './components/Footer';
 import { usePWAInstall } from './hooks/usePWAInstall';
@@ -32,6 +33,9 @@ const App: React.FC = () => {
         break;
       case 'catalog':
         navigate('/catalog');
+        break;
+      case 'data':
+        navigate('/data');
         break;
       default:
         navigate('/');
@@ -75,6 +79,13 @@ const App: React.FC = () => {
               >
                 <BookOpen className="w-4 h-4" />
                 Catalogue
+              </button>
+              <button
+                onClick={() => handleNavigate('data')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive('/data') ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+              >
+                <Database className="w-4 h-4" />
+                Données
               </button>
               <div className="w-px h-6 bg-slate-200 mx-2"></div>
 
@@ -124,6 +135,11 @@ const App: React.FC = () => {
                 <CatalogManager />
               </PageTransition>
             } />
+            <Route path="/data" element={
+              <PageTransition>
+                <DataPage onNavigate={handleNavigate} />
+              </PageTransition>
+            } />
           </Routes>
         </AnimatePresence>
       </main>
@@ -154,6 +170,14 @@ const App: React.FC = () => {
           >
             <BookOpen className="w-6 h-6" />
             <span className="text-[10px] font-medium">Catalogue</span>
+          </button>
+
+          <button
+            onClick={() => handleNavigate('data')}
+            className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive('/data') ? 'text-blue-600' : 'text-slate-400'}`}
+          >
+            <Database className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Données</span>
           </button>
         </div>
       </div>

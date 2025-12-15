@@ -1,7 +1,7 @@
 {
   "name": "grxp---gestion-des-risques-essais/xp",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -11,6 +11,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "file-saver": "^2.0.5",
     "framer-motion": "^12.23.25",
     "html2pdf.js": "^0.12.1",
     "lucide-react": "^0.554.0",
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "jsdom": "^27.2.0",

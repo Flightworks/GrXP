@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { RiskEntry, RiskCatalogEntry, StudyContext } from '../types';
 import { getRisks, deleteRisk, saveRisk, getStudyContext, saveStudyContext, startNewStudy } from '../services/storage';
-import { Search, Plus, BookOpen, Trash2, FileText, Download, Copy, RefreshCw, Printer } from 'lucide-react';
+import { Search, Plus, BookOpen, Trash2, FileText, RefreshCw } from 'lucide-react';
 import SynthesisMatrix from '../components/SynthesisMatrix';
 import CatalogModal from '../components/CatalogModal';
 import { calculateRiskLevel } from '../constants';
-import FullReportPrint from '../components/FullReportPrint';
-import html2pdf from 'html2pdf.js';
 
 interface DashboardProps {
   onNavigate: (page: string, id?: string) => void;
@@ -16,7 +14,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [risks, setRisks] = useState<RiskEntry[]>([]);
   const [context, setContext] = useState<StudyContext>({ studyName: '', aircraft: '', date: '', globalSynthesis: '' });
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
-  const [printMode, setPrintMode] = useState<'none' | 'synthesis' | 'full' | 'download'>('none');
 
   const loadData = () => {
     const data = getRisks();
@@ -35,53 +32,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     }
   }, [context]);
 
-  // Handle printing and downloading side-effects
-  useEffect(() => {
-    if (printMode === 'none') return;
 
-    if (printMode === 'download') {
-      const element = document.getElementById('report-content');
-      if (element) {
-        // Sanitize filename to ensure it works across browsers
-        const safeName = (context.studyName || 'Etude').replace(/[^a-z0-9\-_]/gi, '_');
-        const opt = {
-          margin: 10,
-          filename: `Rapport_GrXP_${safeName}.pdf`,
-          image: { type: 'jpeg' as const, quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-        };
-
-        // Allow render to finish
-        requestAnimationFrame(() => {
-          // Use output('blob') to manually handle the download which guarantees the filename
-          html2pdf().set(opt).from(element).output('blob').then((blob: Blob) => {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = opt.filename;
-            document.body.appendChild(link); // Required for some browsers
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            setPrintMode('none');
-          });
-        });
-      }
-      return;
-    }
-
-    // Browser print
-    // Use requestAnimationFrame to ensure the DOM has updated with the 'print-only' elements
-    requestAnimationFrame(() => {
-      // Small delay still helpful for some browser render cycles, but RAF is cleaner
-      setTimeout(() => {
-        window.print();
-        setPrintMode('none');
-      }, 100);
-    });
-
-  }, [printMode, context.studyName]);
 
   const handleContextChange = (field: keyof StudyContext, value: string) => {
     setContext(prev => ({ ...prev, [field]: value }));
@@ -125,40 +76,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     setIsCatalogOpen(false);
   };
 
-  const handleCopySynthesis = () => {
-    let text = `SYNTHÈSE GRXP\n`;
-    text += `ÉTUDE: ${context.studyName} (${context.aircraft})\n`;
-    text += `DATE: ${new Date().toLocaleDateString()}\n`;
-    text += `---------------------------\n`;
-    text += `SYNTHÈSE GLOBALE: ${context.globalSynthesis}\n\n`;
-    text += `DÉTAIL DES RISQUES RÉSIDUELS:\n`;
 
-    // Group by experimentation for text copy
-    const grouped: Record<string, RiskEntry[]> = {};
-    risks.forEach(r => {
-      const exp = r.experimentation || 'Général';
-      if (!grouped[exp]) grouped[exp] = [];
-      grouped[exp].push(r);
-    });
-
-    Object.keys(grouped).forEach(exp => {
-      text += `\nEXPÉRIMENTATION: ${exp.toUpperCase()}\n`;
-      grouped[exp].forEach(r => {
-        text += `- ${r.activityTitle}: ${r.residualRisk.computedLevel.toUpperCase()} (G${r.residualRisk.gravity}/O${r.residualRisk.occurrence})\n`;
-        text += `  Mesures: ${r.mitigationMeasures}\n`;
-      });
-    });
-
-    navigator.clipboard.writeText(text).then(() => alert('Synthèse copiée dans le presse-papier'));
-  };
-
-  const handlePrint = (mode: 'synthesis' | 'full') => {
-    setPrintMode(mode);
-  };
-
-  const handleDirectDownload = () => {
-    setPrintMode('download');
-  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -231,7 +149,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* --- Step 3: Synthesis View (Matrix) --- */}
-      <div className={`w-full ${printMode === 'full' || printMode === 'download' ? 'print-hidden' : ''}`}>
+      <div className="w-full">
         <div className="flex justify-between items-end mb-2 no-print">
           <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest">2. Synthèse & Matrice</h2>
           <div className="text-xs text-slate-400">
@@ -271,47 +189,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           {/* Print View */}
           <div className="hidden print-only text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">
             {context.globalSynthesis || "Aucune conclusion enregistrée pour cette étude."}
-          </div>
-        </div>
-      </div>
-
-      {/* Hidden Full Report Component (Visible only when printMode === 'full' or 'download') */}
-      <div id="report-content" className={printMode === 'full' || printMode === 'download' ? 'block' : 'hidden'}>
-        <FullReportPrint context={context} risks={risks} />
-      </div>
-
-      {/* --- Step 4: Export Actions --- */}
-      <div className="bg-slate-900 rounded-2xl p-6 text-white no-print">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-          <div>
-            <h3 className="font-bold text-lg mb-1">Exporter le dossier</h3>
-            <p className="text-slate-400 text-xs">Générez les documents pour la commission de sécurité.</p>
-          </div>
-          <div className="flex flex-wrap gap-3 justify-center">
-            <button
-              onClick={handleCopySynthesis}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-            >
-              <Copy className="w-4 h-4" /> Copier Texte
-            </button>
-            <button
-              onClick={() => handlePrint('synthesis')}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
-            >
-              <Printer className="w-4 h-4" /> Imprimer Synthèse
-            </button>
-            <button
-              onClick={() => handlePrint('full')}
-              className="px-4 py-2 bg-white text-slate-900 hover:bg-slate-100 rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
-            >
-              <Printer className="w-4 h-4" /> Imprimer Rapport
-            </button>
-            <button
-              onClick={handleDirectDownload}
-              className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" /> PDF Direct
-            </button>
           </div>
         </div>
       </div>

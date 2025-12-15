@@ -98,9 +98,9 @@ export const getStudyContext = (): StudyContext => {
   try {
     const data = localStorage.getItem(CONTEXT_KEY);
     if (data) return JSON.parse(data);
-    return { 
-      studyName: 'Nouvelle Étude', 
-      aircraft: '', 
+    return {
+      studyName: 'Nouvelle Étude',
+      aircraft: '',
       date: new Date().toISOString().split('T')[0],
       globalSynthesis: ''
     };
@@ -128,13 +128,13 @@ export const startNewStudy = (): void => {
 export const saveRisk = (risk: RiskEntry): void => {
   const risks = getRisks();
   const existingIndex = risks.findIndex(r => r.id === risk.id);
-  
+
   if (existingIndex >= 0) {
     risks[existingIndex] = risk;
   } else {
     risks.push(risk);
   }
-  
+
   localStorage.setItem(STORAGE_KEY, JSON.stringify(risks));
 };
 
@@ -145,16 +145,16 @@ export const getRisks = (): RiskEntry[] => {
       const parsedData = JSON.parse(data);
       if (parsedData.length > 0) return parsedData;
     }
-    
+
     // Seed data ONLY if explicitly requested or for demo purposes on very first load?
     // User requested "Enter study name THEN choose risks".
     // So default should probably be empty if strictly following workflow, 
     // but for demo purposes we keep seeding if "completely empty".
     // Let's seed only if context is also missing (fresh app)
     if (!localStorage.getItem(CONTEXT_KEY)) {
-       const seedData = generateSeedData();
-       localStorage.setItem(STORAGE_KEY, JSON.stringify(seedData));
-       return seedData;
+      const seedData = generateSeedData();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(seedData));
+      return seedData;
     }
     return [];
 
@@ -236,4 +236,129 @@ export const saveCatalogEntry = (entry: RiskCatalogEntry): void => {
 export const deleteCatalogEntry = (id: string): void => {
   const entries = getCatalogEntries().filter(e => e.id !== id);
   localStorage.setItem(CATALOG_KEY, JSON.stringify(entries));
+};
+
+// --- Import / Export ---
+
+export const exportRisksToJSON = (): string => {
+  const risks = getRisks();
+  return JSON.stringify(risks, null, 2);
+};
+
+export const importRisksFromJSON = (jsonContent: string): void => {
+  try {
+    const risks = JSON.parse(jsonContent);
+    if (!Array.isArray(risks)) throw new Error("Format JSON invalide : doit être un tableau");
+
+    // REPLACE Strategy: Overwrite all risks
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(risks));
+
+  } catch (e) {
+    console.error("Failed to import JSON", e);
+    throw e;
+  }
+};
+
+export const exportRisksToCSV = (): string => {
+  const risks = getRisks();
+  if (risks.length === 0) return '';
+
+  const headers = [
+    'ID', 'Etude', 'Cahier_Manipe', 'Titre_Activite', 'Aeronef', 'Evenement_Redoute', 'Mesures_Attenuation', 'Synthese',
+    'Init_Gravite', 'Init_Occurrence', 'Init_Exposition', 'Init_Detectabilite',
+    'Res_Gravite', 'Res_Occurrence', 'Res_Exposition', 'Res_Detectabilite',
+    'Mise_a_jour'
+  ];
+
+  const escapeCsv = (str: string | number | undefined) => {
+    if (str === undefined || str === null) return '';
+    const stringValue = String(str);
+    if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+      return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+    return stringValue;
+  };
+
+  const rows = risks.map(r => [
+    r.id, r.studyNumber, r.experimentation, r.activityTitle, r.aircraft, r.dreadedEvent, r.mitigationMeasures, r.synthesis,
+    r.initialRisk.gravity, r.initialRisk.occurrence, r.initialRisk.exposition, r.initialRisk.detectability,
+    r.residualRisk.gravity, r.residualRisk.occurrence, r.residualRisk.exposition, r.residualRisk.detectability,
+    r.updatedAt
+  ].map(escapeCsv).join(','));
+
+  return [headers.join(','), ...rows].join('\n');
+};
+
+export const importRisksFromCSV = (csvContent: string): void => {
+  const lines = csvContent.trim().split('\n');
+  if (lines.length < 2) throw new Error("Fichier CSV vide ou sans en-tête");
+
+  const parseCSVLine = (line: string): string[] => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current);
+    return result;
+  };
+
+  const newRisks: RiskEntry[] = [];
+
+  // Skip header, start at 1
+  for (let i = 1; i < lines.length; i++) {
+    const vals = parseCSVLine(lines[i]);
+    // Should have at least enough columns for ID..InitD (approx 12+)
+    if (vals.length < 12) continue;
+
+    const newRisk: RiskEntry = {
+      id: vals[0] || crypto.randomUUID(),
+      studyNumber: vals[1],
+      experimentation: vals[2],
+      activityTitle: vals[3],
+      aircraft: vals[4],
+      dreadedEvent: vals[5],
+      mitigationMeasures: vals[6],
+      synthesis: vals[7],
+      initialRisk: {
+        gravity: Number(vals[8]) || Gravity.Negligeable,
+        occurrence: (vals[9] as Occurrence) || Occurrence.TresImprobable,
+        exposition: Number(vals[10]) || Exposition.Faible,
+        detectability: Number(vals[11]) || Detectability.Totale,
+        computedLevel: RiskLevel.Faible // Recalculated below
+      },
+      residualRisk: {
+        gravity: Number(vals[12]) || Gravity.Negligeable,
+        occurrence: (vals[13] as Occurrence) || Occurrence.TresImprobable,
+        exposition: Number(vals[14]) || Exposition.Faible,
+        detectability: Number(vals[15]) || Detectability.Totale,
+        computedLevel: RiskLevel.Faible // Recalculated below
+      },
+      updatedAt: Number(vals[16]) || Date.now()
+    };
+
+    // Recalculate levels to be safe
+    newRisk.initialRisk.computedLevel = calculateRiskLevel(newRisk.initialRisk.gravity, newRisk.initialRisk.occurrence);
+    newRisk.residualRisk.computedLevel = calculateRiskLevel(newRisk.residualRisk.gravity, newRisk.residualRisk.occurrence);
+
+    newRisks.push(newRisk);
+  }
+
+  // REPLACE Strategy: Overwrite all risks
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(newRisks));
 };
