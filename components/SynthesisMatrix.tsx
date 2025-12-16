@@ -195,7 +195,7 @@ const SynthesisMatrix: React.FC<SynthesisMatrixProps> = ({ risks, onRiskClick })
                                                     <ShieldCheck className="w-3 h-3" />
                                                     Mesures d'atténuation
                                                 </div>
-                                                <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-2 rounded border border-slate-100/50">
+                                                <p className="text-xs text-slate-600 whitespace-pre-wrap leading-relaxed bg-slate-50 p-2 rounded border border-slate-100/50">
                                                     {risk.mitigationMeasures || "Aucune mesure spécifiée."}
                                                 </p>
                                             </div>

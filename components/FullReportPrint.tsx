@@ -84,11 +84,11 @@ const FullReportPrint: React.FC<FullReportPrintProps> = ({ context, risks }) => 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                       <h3 className="text-xs font-bold uppercase text-slate-500 mb-1">Événement Redouté</h3>
-                      <p className="text-sm text-slate-900 leading-snug">{risk.dreadedEvent || "-"}</p>
+                      <p className="text-sm text-slate-900 whitespace-pre-wrap leading-snug">{risk.dreadedEvent || "-"}</p>
                     </div>
                     <div>
                       <h3 className="text-xs font-bold uppercase text-slate-500 mb-1">Mesures d'atténuation</h3>
-                      <p className="text-sm text-slate-900 leading-snug">{risk.mitigationMeasures || "-"}</p>
+                      <p className="text-sm text-slate-900 whitespace-pre-wrap leading-snug">{risk.mitigationMeasures || "-"}</p>
                     </div>
                     <div>
                       <h3 className="text-xs font-bold uppercase text-slate-500 mb-1">Synthèse Individuelle</h3>
