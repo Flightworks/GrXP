@@ -23,7 +23,7 @@ const FullReportPrint: React.FC<FullReportPrintProps> = ({ context, risks }) => 
   const experimentations = Object.keys(groupedRisks).sort();
 
   return (
-    <div className="print-only w-full mx-auto bg-white">
+    <div className="w-full mx-auto bg-white">
       {/* Report Header */}
       <div className="border-b-2 border-slate-900 pb-4 mb-8">
         <h1 className="text-2xl font-black uppercase tracking-wider text-slate-900">Analyse de Risques - Rapport Complet</h1>
@@ -98,27 +98,27 @@ const FullReportPrint: React.FC<FullReportPrintProps> = ({ context, risks }) => 
 
                   {/* Matrices Side-by-Side */}
                   <div className="flex flex-col gap-4 border-t border-slate-100 pt-4">
-                    <div className="flex items-center justify-center gap-8">
-                      <div className="flex-1 max-w-xs">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="flex-1 flex flex-col items-center">
                         <div className="text-center text-[10px] font-bold uppercase mb-2">Initial</div>
-                        <div className="scale-[0.8] origin-top w-full flex justify-center -mb-8">
+                        <div className="scale-75 origin-top w-full flex justify-center -mb-20">
                           <MatrixGrid
                             currentGravity={risk.initialRisk.gravity}
                             currentOccurrence={risk.initialRisk.occurrence}
-                            size="sm"
+                            size="md"
                           />
                         </div>
                       </div>
-                      <div className="text-slate-300 text-2xl">→</div>
-                      <div className="flex-1 max-w-xs">
+                      <div className="text-slate-300 text-2xl pb-12">→</div>
+                      <div className="flex-1 flex flex-col items-center">
                         <div className="text-center text-[10px] font-bold uppercase mb-2">Résiduel</div>
-                        <div className="scale-[0.8] origin-top w-full flex justify-center -mb-8">
+                        <div className="scale-75 origin-top w-full flex justify-center -mb-20">
                           <MatrixGrid
                             currentGravity={risk.residualRisk.gravity}
                             currentOccurrence={risk.residualRisk.occurrence}
                             initialGravity={risk.initialRisk.gravity}
                             initialOccurrence={risk.initialRisk.occurrence}
-                            size="sm"
+                            size="md"
                           />
                         </div>
                       </div>

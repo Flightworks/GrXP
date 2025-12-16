@@ -24,7 +24,7 @@ const MatrixGrid: React.FC<MatrixGridProps> = ({
   const [hovered, setHovered] = useState<{ g: Gravity, o: Occurrence } | null>(null);
 
   // Responsive sizes
-  const cellSize = size === 'sm' ? 'w-8 h-8 text-[10px]' : size === 'md' ? 'w-12 h-12 md:w-16 md:h-16 text-sm' : 'w-16 h-16 text-base';
+  const cellSize = size === 'sm' ? 'w-8 h-8 text-[10px]' : size === 'md' ? 'w-12 h-12 text-sm' : 'w-16 h-16 text-base';
 
   const rows = [4, 3, 2, 1] as Gravity[];
   const cols = ['A', 'B', 'C', 'D'] as Occurrence[];

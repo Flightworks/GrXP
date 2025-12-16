@@ -304,7 +304,7 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
             {/* Hidden Render Areas for PDF/Print */}
             <div className={printMode === 'full' || printMode === 'download' ? 'block' : 'hidden'}>
                 {/* Re-use FullReportPrint but we need to ensure it's rendered in DOM */}
-                <div id="report-content-data">
+                <div id="report-content-data" style={{ width: '700px', backgroundColor: 'white' }}>
                     <FullReportPrint context={context} risks={risks} />
                 </div>
             </div>
