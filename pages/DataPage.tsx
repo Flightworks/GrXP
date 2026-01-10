@@ -12,7 +12,7 @@ interface DataPageProps {
 
 const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
     const context = getStudyContext();
-    const risks = getRisks();
+    const [risks, setRisks] = useState<RiskEntry[]>(getRisks());
     const [printMode, setPrintMode] = useState<'none' | 'synthesis' | 'full' | 'download'>('none');
 
     // --- Download Logic ---
@@ -81,9 +81,11 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
             try {
                 if (file.name.toLowerCase().endsWith('.json')) {
                     importRisksFromJSON(content);
+                    setRisks(getRisks());
                     alert('Risques importés avec succès (JSON).');
                 } else if (file.name.toLowerCase().endsWith('.csv')) {
                     importRisksFromCSV(content);
+                    setRisks(getRisks());
                     alert('Risques importés avec succès (CSV).');
                 } else {
                     alert('Format de fichier non supporté. Utilisez .csv ou .json');

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { calculateRiskLevel } from '../constants';
-import { Gravity, Occurrence, RiskLevel } from '../types';
+import { calculateRiskLevel } from '../../constants';
+import { Gravity, Occurrence, RiskLevel } from '../../types';
 
 describe('Risk Calculation Logic', () => {
     it('should return Inacceptable for Catastrophique + Frequent', () => {
