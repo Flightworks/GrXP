@@ -204,13 +204,23 @@ const SynthesisMatrix: React.FC<SynthesisMatrixProps> = ({ risks, onRiskClick })
                                             <div className="flex items-center justify-end gap-3 text-[10px] text-slate-400 font-medium">
                                                 <span className="uppercase tracking-wide">Évolution:</span>
                                                 <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-full border border-slate-100">
-                                                    <span className="text-slate-500">
-                                                        G{risk.initialRisk.gravity}/O{risk.initialRisk.occurrence}
-                                                    </span>
+                                                    <div className="flex flex-col items-end leading-none py-0.5">
+                                                        <span className="text-slate-500">
+                                                            G{risk.initialRisk.gravity}/O{risk.initialRisk.occurrence}
+                                                        </span>
+                                                        <span className="text-[8px] text-slate-400 mt-0.5">
+                                                            E{risk.initialRisk.exposition}/D{risk.initialRisk.detectability}
+                                                        </span>
+                                                    </div>
                                                     <ArrowRight className="w-3 h-3 text-slate-300" />
-                                                    <span className="font-bold text-slate-700">
-                                                        G{risk.residualRisk.gravity}/O{risk.residualRisk.occurrence}
-                                                    </span>
+                                                    <div className="flex flex-col items-start leading-none py-0.5">
+                                                        <span className="font-bold text-slate-700">
+                                                            G{risk.residualRisk.gravity}/O{risk.residualRisk.occurrence}
+                                                        </span>
+                                                        <span className="text-[8px] text-slate-500 mt-0.5">
+                                                            E{risk.residualRisk.exposition}/D{risk.residualRisk.detectability}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
