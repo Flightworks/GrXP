@@ -361,4 +361,17 @@ export const importRisksFromCSV = (csvContent: string): void => {
 
   // REPLACE Strategy: Overwrite all risks
   localStorage.setItem(STORAGE_KEY, JSON.stringify(newRisks));
+
+  // Update Study Context if risks exist
+  if (newRisks.length > 0) {
+    const firstRisk = newRisks[0];
+    const currentContext = getStudyContext();
+    const newContext: StudyContext = {
+      ...currentContext,
+      studyName: firstRisk.studyNumber || currentContext.studyName,
+      aircraft: firstRisk.aircraft || currentContext.aircraft,
+      // Date and Global Synthesis are not in CSV, so we keep them or default
+    };
+    saveStudyContext(newContext);
+  }
 };
