@@ -16,7 +16,8 @@ export default defineConfig(({ mode }) => {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       '__APP_VERSION__': JSON.stringify(JSON.parse(readFileSync('package.json', 'utf-8')).version),
-      '__APP_LICENSE__': JSON.stringify(JSON.parse(readFileSync('package.json', 'utf-8')).license)
+      '__APP_LICENSE__': JSON.stringify(JSON.parse(readFileSync('package.json', 'utf-8')).license),
+      '__BUILD_DATE__': JSON.stringify(new Date().toISOString().split('T')[0])
     },
     resolve: {
       alias: {
