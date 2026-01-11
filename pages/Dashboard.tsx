@@ -38,6 +38,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     setContext(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleDeleteRisk = (id: string) => {
+    deleteRisk(id);
+    loadData();
+  };
+
   const handleNewStudy = () => {
     if (confirm("Attention : Cela va effacer les risques actuels pour démarrer une nouvelle étude. Confirmer ?")) {
       startNewStudy();
@@ -170,6 +175,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <SynthesisMatrix
           risks={risks}
           onRiskClick={(id) => onNavigate('edit', id)}
+          onDeleteRisk={handleDeleteRisk}
         />
 
         {/* Global Synthesis Text Area */}
