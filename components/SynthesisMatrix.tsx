@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { RiskEntry, Gravity, Occurrence } from '../types';
 import { calculateRiskLevel, getRiskTheme } from '../constants';
-import { ArrowRight, ShieldCheck, Activity, Edit3 } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Activity, Edit3, Trash2 } from 'lucide-react';
 
 interface SynthesisMatrixProps {
     risks: RiskEntry[];
     onRiskClick?: (id: string) => void;
+    onDeleteRisk?: (id: string) => void;
 }
 
-const SynthesisMatrix: React.FC<SynthesisMatrixProps> = ({ risks, onRiskClick }) => {
+const SynthesisMatrix: React.FC<SynthesisMatrixProps> = ({ risks, onRiskClick, onDeleteRisk }) => {
     const [hoveredCell, setHoveredCell] = useState<{ g: Gravity, o: Occurrence } | null>(null);
 
     const rows = [4, 3, 2, 1] as Gravity[];
@@ -183,6 +184,20 @@ const SynthesisMatrix: React.FC<SynthesisMatrixProps> = ({ risks, onRiskClick })
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     {onRiskClick && <Edit3 className="w-3 h-3 text-slate-300 group-hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all" />}
+                                                    {onDeleteRisk && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (confirm('Voulez-vous vraiment supprimer ce risque ?')) {
+                                                                    onDeleteRisk(risk.id);
+                                                                }
+                                                            }}
+                                                            className="p-1 hover:bg-red-50 rounded-full transition-colors group-hover:opacity-100 opacity-0"
+                                                            title="Supprimer ce risque"
+                                                        >
+                                                            <Trash2 className="w-3 h-3 text-slate-300 hover:text-red-500 transition-all" />
+                                                        </button>
+                                                    )}
                                                     <div className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${residualTheme.full}`}>
                                                         {risk.residualRisk.computedLevel}
                                                     </div>
