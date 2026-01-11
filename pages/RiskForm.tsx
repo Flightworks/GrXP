@@ -4,6 +4,7 @@ import { RiskEntry, RiskCatalogEntry } from '../types';
 import { saveRisk, getRiskById, createEmptyRisk } from '../services/storage';
 import AssessmentSection from '../components/AssessmentSection';
 import CatalogModal from '../components/CatalogModal';
+import HelpTooltip from '../components/HelpTooltip';
 import { ChevronLeft, Save, BookOpen, AlertCircle } from 'lucide-react';
 import { calculateRiskLevel, getRiskTheme } from '../constants';
 
@@ -101,7 +102,10 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Étude (Réf.)</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1 flex items-center">
+                                Étude (Réf.)
+                                <HelpTooltip text="Référence unique identifiant l'étude ou le dossier d'essai en cours." />
+                            </label>
                             <input
                                 type="text"
                                 value={risk.studyNumber}
@@ -111,7 +115,10 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Aéronef</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1 flex items-center">
+                                Aéronef
+                                <HelpTooltip text="Modèle et immatriculation de l'aéronef ou du système concerné par l'essai." />
+                            </label>
                             <input
                                 type="text"
                                 value={risk.aircraft}
@@ -124,7 +131,10 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Expérimentation (Groupe)</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1 flex items-center">
+                                Expérimentation (Groupe)
+                                <HelpTooltip text="Contexte opérationnel ou groupe d'essais auquel ce risque est rattaché." />
+                            </label>
                             <input
                                 type="text"
                                 value={risk.experimentation}
@@ -134,7 +144,10 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Titre du Risque</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1 flex items-center">
+                                Titre du Risque
+                                <HelpTooltip text="Intitulé court et significatif résumant le risque (Danger + Conséquence)." />
+                            </label>
                             <input
                                 type="text"
                                 value={risk.activityTitle}
@@ -149,6 +162,7 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
                 {/* Intrinsic Risk Section */}
                 <AssessmentSection
                     title="Risque Intrinsèque"
+                    tooltip="Niveau de risque initial brut, évalué sans tenir compte des mesures de protection."
                     type="intrinsic"
                     data={risk.initialRisk}
                     onChange={(d) => handleChange('initialRisk', d)}
@@ -158,6 +172,7 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
                             <label className="text-xs font-bold text-slate-500 uppercase ml-1 flex items-center gap-2">
                                 <AlertCircle className="w-3 h-3" />
                                 Événements Redoutés
+                                <HelpTooltip text="Scénario détaillé décrivant l'enchaînement des causes menant à l'événement non désiré." />
                             </label>
                             <button
                                 onClick={() => setIsCatalogOpen(true)}
@@ -180,13 +195,17 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
                 {/* Residual Risk Section */}
                 <AssessmentSection
                     title="Risque Résiduel"
+                    tooltip="Niveau de risque final restant après l'application de toutes les mesures d'atténuation."
                     type="residual"
                     data={risk.residualRisk}
                     comparisonRisk={risk.initialRisk} // Pass initial risk for visual comparison
                     onChange={(d) => handleChange('residualRisk', d)}
                 >
                     <div className="mb-6">
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Mesures d'atténuation</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1 flex items-center">
+                            Mesures d'atténuation
+                            <HelpTooltip text="Actions préventives (réduire la probabilité) et correctives (réduire la gravité) mises en œuvre." />
+                        </label>
                         <textarea
                             rows={4}
                             value={risk.mitigationMeasures}
@@ -199,7 +218,10 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
 
                 {/* Synthesis */}
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100/50 shadow-sm">
-                    <label className="block text-xs font-bold text-blue-900 uppercase mb-2 ml-1">Synthèse & Conclusion</label>
+                    <label className="block text-xs font-bold text-blue-900 uppercase mb-2 ml-1 flex items-center">
+                        Synthèse & Conclusion
+                        <HelpTooltip text="Conclusion globale sur l'acceptabilité du risque après atténuation." />
+                    </label>
                     <input
                         type="text"
                         value={risk.synthesis}

@@ -2,9 +2,11 @@ import React from 'react';
 import { Assessment, Gravity, Occurrence, Exposition, Detectability, RiskLevel } from '../types';
 import { GRAVITY_OPTIONS, OCCURRENCE_OPTIONS, EXPOSITION_OPTIONS, DETECTABILITY_OPTIONS, calculateRiskLevel, getRiskColor } from '../constants';
 import MatrixGrid from './MatrixGrid';
+import HelpTooltip from './HelpTooltip';
 
 interface AssessmentSectionProps {
   title: string;
+  tooltip?: string;
   type: 'intrinsic' | 'residual';
   data: Assessment;
   comparisonRisk?: Assessment;
@@ -12,7 +14,7 @@ interface AssessmentSectionProps {
   children?: React.ReactNode;
 }
 
-const AssessmentSection: React.FC<AssessmentSectionProps> = ({ title, type, data, comparisonRisk, onChange, children }) => {
+const AssessmentSection: React.FC<AssessmentSectionProps> = ({ title, tooltip, type, data, comparisonRisk, onChange, children }) => {
 
   const handleUpdate = (field: keyof Assessment, value: any) => {
     const newData = { ...data, [field]: value };
@@ -34,18 +36,23 @@ const AssessmentSection: React.FC<AssessmentSectionProps> = ({ title, type, data
 
   // Modern segmented control component
   const SegmentedControl = <T extends string | number>({ 
-    label, 
+    label,
+    tooltip,
     value, 
     options, 
     onSelect 
   }: { 
-    label: string, 
+    label: string,
+    tooltip: string,
     value: T, 
     options: {value: T, label: string}[], 
     onSelect: (v: T) => void 
   }) => (
     <div className="mb-4">
-      <div className="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest ml-1">{label}</div>
+      <div className="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest ml-1 flex items-center">
+        {label}
+        <HelpTooltip text={tooltip} />
+      </div>
       <div className="flex bg-slate-100 p-1 rounded-xl overflow-x-auto no-scrollbar">
         {options.map((opt) => {
             const isActive = opt.value === value;
@@ -81,6 +88,7 @@ const AssessmentSection: React.FC<AssessmentSectionProps> = ({ title, type, data
         <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2 uppercase tracking-wide">
             <span className={`w-2 h-2 rounded-full ${type === 'intrinsic' ? 'bg-slate-400' : 'bg-blue-500'}`}></span>
             {title}
+            {tooltip && <HelpTooltip text={tooltip} />}
         </h3>
         {/* Computed level is now shown in the Matrix header and sticky footer, so we can hide it here to clean up or keep it minimal */}
       </div>
@@ -91,13 +99,15 @@ const AssessmentSection: React.FC<AssessmentSectionProps> = ({ title, type, data
         {/* Exposition & Detectability - Moved to top to be before Matrix visually */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 border-b border-slate-100 pb-6">
             <SegmentedControl 
-                label="Exposition" 
+                label="Exposition"
+                tooltip="Fréquence et durée pendant laquelle le système ou le personnel est exposé au danger."
                 value={data.exposition} 
                 options={EXPOSITION_OPTIONS} 
                 onSelect={(v) => handleUpdate('exposition', v)} 
             />
             <SegmentedControl 
-                label="Détectabilité" 
+                label="Détectabilité"
+                tooltip="Capacité des équipages ou systèmes à percevoir le danger avant qu'il ne produise ses effets."
                 value={data.detectability} 
                 options={DETECTABILITY_OPTIONS} 
                 onSelect={(v) => handleUpdate('detectability', v)} 
@@ -123,13 +133,15 @@ const AssessmentSection: React.FC<AssessmentSectionProps> = ({ title, type, data
             <div className="xl:col-span-6 flex flex-col justify-center order-2">
                 <div className="grid grid-cols-1 gap-1">
                     <SegmentedControl 
-                        label="Gravité" 
+                        label="Gravité"
+                        tooltip="Sévérité des conséquences potentielles (humaines, matérielles, environnementales) si le risque avère."
                         value={data.gravity} 
                         options={GRAVITY_OPTIONS} 
                         onSelect={(v) => handleUpdate('gravity', v)} 
                     />
                      <SegmentedControl 
-                        label="Occurrence" 
+                        label="Occurrence"
+                        tooltip="Probabilité ou fréquence d'apparition de l'événement redouté."
                         value={data.occurrence} 
                         options={OCCURRENCE_OPTIONS} 
                         onSelect={(v) => handleUpdate('occurrence', v)} 
