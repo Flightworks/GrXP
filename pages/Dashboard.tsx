@@ -44,7 +44,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   };
 
   const handleNewStudy = () => {
-    if (confirm("Attention : Cela va effacer les risques actuels pour démarrer une nouvelle étude. Confirmer ?")) {
+    if (confirm("Voulez-vous créer une nouvelle étude vierge ? L'étude actuelle sera sauvegardée dans 'Mes Études'.")) {
       startNewStudy();
       loadData();
     }

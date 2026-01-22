@@ -1,10 +1,11 @@
 import React from 'react';
 import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { Plane, BookOpen, Home, PlusCircle, Download, LayoutDashboard, Database } from 'lucide-react';
+import { Plane, BookOpen, Home, PlusCircle, Download, LayoutDashboard, Database, FolderOpen } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import RiskForm from './pages/RiskForm';
 import { CatalogManager } from './pages/CatalogManager';
+import StudyManager from './pages/StudyManager';
 import DataPage from './pages/DataPage';
 import PageTransition from './components/PageTransition';
 import Footer from './components/Footer';
@@ -30,6 +31,9 @@ const App: React.FC = () => {
         break;
       case 'edit':
         navigate(id ? `/edit/${id}` : '/edit');
+        break;
+      case 'studies':
+        navigate('/studies');
         break;
       case 'catalog':
         navigate('/catalog');
@@ -66,6 +70,13 @@ const App: React.FC = () => {
               <span className="font-bold text-xl tracking-tight text-slate-800">GrXP</span>
             </div>
             <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handleNavigate('studies')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive('/studies') ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+              >
+                <FolderOpen className="w-4 h-4" />
+                Mes Études
+              </button>
               <button
                 onClick={() => handleNavigate('dashboard')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive('/') ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
@@ -130,6 +141,11 @@ const App: React.FC = () => {
                 <RiskFormWrapper onNavigate={handleNavigate} />
               </PageTransition>
             } />
+            <Route path="/studies" element={
+              <PageTransition>
+                <StudyManager />
+              </PageTransition>
+            } />
             <Route path="/catalog" element={
               <PageTransition>
                 <CatalogManager />
@@ -145,22 +161,30 @@ const App: React.FC = () => {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 px-6 py-2 z-50 pb-safe no-print">
-        <div className="flex justify-around items-center">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 px-2 py-2 z-50 pb-safe no-print">
+        <div className="flex justify-between items-center px-2">
           <button
             onClick={() => handleNavigate('dashboard')}
             className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive('/') ? 'text-blue-600' : 'text-slate-400'}`}
           >
-            <Home className="w-6 h-6" />
+            <Home className="w-5 h-5" />
             <span className="text-[10px] font-medium">Etude</span>
           </button>
 
           <button
-            onClick={() => handleNavigate('edit')}
-            className="flex flex-col items-center justify-center -mt-8"
+            onClick={() => handleNavigate('studies')}
+            className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive('/studies') ? 'text-blue-600' : 'text-slate-400'}`}
           >
-            <div className="w-14 h-14 bg-blue-600 rounded-full shadow-lg shadow-blue-200 flex items-center justify-center text-white transform active:scale-95 transition-transform">
-              <PlusCircle className="w-7 h-7" />
+            <FolderOpen className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Projets</span>
+          </button>
+
+          <button
+            onClick={() => handleNavigate('edit')}
+            className="flex flex-col items-center justify-center -mt-8 mx-1"
+          >
+            <div className="w-12 h-12 bg-blue-600 rounded-full shadow-lg shadow-blue-200 flex items-center justify-center text-white transform active:scale-95 transition-transform">
+              <PlusCircle className="w-6 h-6" />
             </div>
           </button>
 
@@ -168,7 +192,7 @@ const App: React.FC = () => {
             onClick={() => handleNavigate('catalog')}
             className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive('/catalog') ? 'text-blue-600' : 'text-slate-400'}`}
           >
-            <BookOpen className="w-6 h-6" />
+            <BookOpen className="w-5 h-5" />
             <span className="text-[10px] font-medium">Catalogue</span>
           </button>
 
@@ -176,7 +200,7 @@ const App: React.FC = () => {
             onClick={() => handleNavigate('data')}
             className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive('/data') ? 'text-blue-600' : 'text-slate-400'}`}
           >
-            <Database className="w-6 h-6" />
+            <Database className="w-5 h-5" />
             <span className="text-[10px] font-medium">Données</span>
           </button>
         </div>

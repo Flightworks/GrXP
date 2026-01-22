@@ -72,6 +72,16 @@ export interface StudyContext {
   globalSynthesis: string;
 }
 
+export interface Study {
+  id: string;
+  name: string;
+  aircraft: string;
+  date: string;
+  globalSynthesis: string;
+  risks: RiskEntry[];
+  updatedAt: number;
+}
+
 // Helper types for UI selection
 export interface SelectOption<T> {
   value: T;
