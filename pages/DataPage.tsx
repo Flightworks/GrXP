@@ -142,14 +142,13 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
     };
 
     const handleCopySynthesis = () => {
-        let text = `SYNTHÈSE GRXP\n`;
-        text += `ÉTUDE: ${context.studyName}\n`;
-        text += `EXPÉRIMENTATION: ${context.experimentation}\n`;
-        text += `AÉRONEF: ${context.aircraft}\n`;
-        text += `DATE: ${new Date().toLocaleDateString()}\n`;
-        text += `---------------------------\n`;
-        text += `SYNTHÈSE GLOBALE: ${context.globalSynthesis}\n\n`;
-        text += `DÉTAIL DES RISQUES RÉSIDUELS:\n`;
+        let text = `# Synthèse GRXP : ${context.studyName}\n\n`;
+        text += `- **Expérimentation :** ${context.experimentation}\n`;
+        text += `- **Aéronef :** ${context.aircraft}\n`;
+        text += `- **Date :** ${new Date().toLocaleDateString()}\n\n`;
+        text += `--- \n\n`;
+        text += `## Synthèse Globale\n${context.globalSynthesis || "_Aucune synthèse renseignée_"}\n\n`;
+        text += `## Détail des Risques Résiduels\n`;
 
         const grouped: Record<string, RiskEntry[]> = {};
         risks.forEach(r => {
@@ -159,14 +158,20 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
         });
 
         Object.keys(grouped).forEach(exp => {
-            text += `\nEXPÉRIMENTATION: ${exp.toUpperCase()}\n`;
+            text += `\n### Expérimentation : ${exp}\n\n`;
+            text += `| Activité | Niveau | G | O | Mesures de Mitigation |\n`;
+            text += `| :--- | :--- | :---: | :---: | :--- |\n`;
             grouped[exp].forEach(r => {
-                text += `- ${r.activityTitle}: ${r.residualRisk.computedLevel.toUpperCase()} (G${r.residualRisk.gravity}/O${r.residualRisk.occurrence})\n`;
-                text += `  Mesures: ${r.mitigationMeasures}\n`;
+                const levelStr = r.residualRisk.computedLevel.toUpperCase();
+                // Escape pipe characters in fields to avoid breaking the markdown table
+                const safeTitle = r.activityTitle.replace(/\|/g, '\\|');
+                const safeMeasures = r.mitigationMeasures.replace(/\|/g, '\\|').replace(/\n/g, '<br>');
+
+                text += `| ${safeTitle} | **${levelStr}** | ${r.residualRisk.gravity} | ${r.residualRisk.occurrence} | ${safeMeasures} |\n`;
             });
         });
 
-        navigator.clipboard.writeText(text).then(() => alert('Synthèse copiée dans le presse-papier'));
+        navigator.clipboard.writeText(text).then(() => alert('Synthèse Markdown copiée dans le presse-papier'));
     };
 
     return (
@@ -238,8 +243,8 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
                                 <Copy className="w-5 h-5" />
                             </div>
                             <div className="text-left">
-                                <span className="block font-bold text-slate-800">Copier Texte</span>
-                                <span className="text-xs text-slate-500">Pour coller dans un email/rapport</span>
+                                <span className="block font-bold text-slate-800">Copier en Markdown</span>
+                                <span className="text-xs text-slate-500">Pour coller dans Notion, Obsidian ou Email</span>
                             </div>
                         </button>
                     </div>

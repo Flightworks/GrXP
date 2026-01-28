@@ -104,7 +104,6 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1 flex items-center">
                                 Étude (Réf.)
-                                <HelpTooltip text="Référence unique identifiant l'étude ou le dossier d'essai en cours." />
                             </label>
                             <input
                                 type="text"
@@ -117,7 +116,6 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1 flex items-center">
                                 Aéronef
-                                <HelpTooltip text="Modèle et immatriculation de l'aéronef ou du système concerné par l'essai." />
                             </label>
                             <input
                                 type="text"
@@ -133,7 +131,6 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1 flex items-center">
                                 Expérimentation (Groupe)
-                                <HelpTooltip text="Contexte opérationnel ou groupe d'essais auquel ce risque est rattaché." />
                             </label>
                             <input
                                 type="text"
@@ -146,7 +143,6 @@ const RiskForm: React.FC<RiskFormProps> = ({ riskId, onNavigate }) => {
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1 flex items-center">
                                 Titre du Risque
-                                <HelpTooltip text="Intitulé court et significatif résumant le risque (Danger + Conséquence)." />
                             </label>
                             <input
                                 type="text"
