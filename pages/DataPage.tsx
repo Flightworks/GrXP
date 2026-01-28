@@ -70,7 +70,7 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        if (!confirm("ATTENTION : Cette action va effacer tous les risques existants pour les remplacer par ceux du fichier.\n\nÊtes-vous sûr de vouloir continuer ?")) {
+        if (!confirm("ATTENTION : Cette action va effacer TOUTES les études existantes pour les remplacer par celles du fichier.\n\nÊtes-vous sûr de vouloir continuer ?")) {
             event.target.value = '';
             return;
         }
@@ -82,11 +82,11 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
                 if (file.name.toLowerCase().endsWith('.json')) {
                     importRisksFromJSON(content);
                     setRisks(getRisks());
-                    alert('Risques importés avec succès (JSON).');
+                    alert('Base de données restaurée avec succès (JSON).');
                 } else if (file.name.toLowerCase().endsWith('.csv')) {
                     importRisksFromCSV(content);
                     setRisks(getRisks());
-                    alert('Risques importés avec succès (CSV).');
+                    alert('Études importées avec succès (CSV).');
                 } else {
                     alert('Format de fichier non supporté. Utilisez .csv ou .json');
                 }
@@ -261,14 +261,14 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
                                     onClick={() => downloadFile(exportRisksToCSV(), 'risks', 'csv', 'text/csv')}
                                     className="flex items-center justify-between px-4 py-3 bg-white border border-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
                                 >
-                                    <span>Format CSV (Excel)</span>
+                                    <span>Format CSV (Toutes études)</span>
                                     <Download className="w-4 h-4 text-slate-400" />
                                 </button>
                                 <button
                                     onClick={() => downloadFile(exportRisksToJSON(), 'backup_grxp', 'json', 'application/json')}
                                     className="flex items-center justify-between px-4 py-3 bg-white border border-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
                                 >
-                                    <span>Format JSON (Complet)</span>
+                                    <span>Format JSON (Base Complète)</span>
                                     <Download className="w-4 h-4 text-slate-400" />
                                 </button>
                             </div>
@@ -282,7 +282,7 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
                                 <div className="flex items-start gap-2">
                                     <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5" />
                                     <p className="text-xs text-orange-800 leading-tight">
-                                        <b>Attention :</b> L'importation remplace toutes les données actuelles.
+                                        <b>Attention :</b> L'importation remplace TOUTES les études actuelles.
                                     </p>
                                 </div>
                             </div>

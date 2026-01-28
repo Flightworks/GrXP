@@ -1,61 +1,60 @@
-import { RiskEntry, Occurrence, Gravity, Exposition, Detectability, RiskLevel, RiskCatalogEntry, StudyContext } from "../types";
+import { RiskEntry, Occurrence, Gravity, Exposition, Detectability, RiskLevel, RiskCatalogEntry, StudyContext, Study } from "../types";
 import { DEFAULT_CATALOG, calculateRiskLevel } from "../constants";
 
-const STORAGE_KEY = 'grxp_risks_v1';
+const DB_KEY = 'grxp_db_v1';
+const ACTIVE_STUDY_KEY = 'grxp_active_study_id_v1';
 const CATALOG_KEY = 'grxp_catalog_v1';
-const CONTEXT_KEY = 'grxp_context_v1';
+
+// Legacy keys for migration
+const LEGACY_RISKS_KEY = 'grxp_risks_v1';
+const LEGACY_CONTEXT_KEY = 'grxp_context_v1';
 
 // --- Seed Data Generator ---
 
-const generateSeedData = (): RiskEntry[] => {
-  // Create realistic scenarios based on the catalog
+const generateSeedData = (studyName: string, aircraftName: string): RiskEntry[] => {
   const scenarios = [
     {
-      catId: 'cat-2', // Appontage SHOL
+      catId: 'cat-2',
       activity: 'Glissement sur le pont',
       experimentation: 'Qualification SHOL Jour/Nuit',
-      aircraft: 'NH90 Caïman',
-      study: 'PHEL-182',
-      // High initial risk, improved by strict procedures
+      aircraft: aircraftName,
+      study: studyName,
       initG: Gravity.Catastrophique, initO: Occurrence.Occasionnel,
       resG: Gravity.Critique, resO: Occurrence.Rare
     },
     {
-      catId: 'cat-5', // EMC
+      catId: 'cat-5',
       activity: 'Perturbation CDVE',
       experimentation: 'Qualification SHOL Jour/Nuit',
-      aircraft: 'NH90 Caïman',
-      study: 'PHEL-182',
-      // Low initial risk, kept low
+      aircraft: aircraftName,
+      study: studyName,
       initG: Gravity.Moderee, initO: Occurrence.Occasionnel,
       resG: Gravity.Moderee, resO: Occurrence.TresImprobable
     },
     {
-      catId: 'cat-3', // JVN
+      catId: 'cat-3',
       activity: 'Désorientation Spatiale',
       experimentation: 'Vol Tactique JVN (Niveau 5)',
-      aircraft: 'Panther Std 2',
-      study: 'EXP-NVG-24',
-      // Mitigation reduces probability mainly
+      aircraft: aircraftName,
+      study: studyName,
       initG: Gravity.Critique, initO: Occurrence.Occasionnel,
       resG: Gravity.Critique, resO: Occurrence.Rare
     },
     {
-      catId: 'cat-7', // Bird strike
+      catId: 'cat-7',
       activity: 'Collision Aviaire',
       experimentation: 'Vol Tactique JVN (Niveau 5)',
-      aircraft: 'Panther Std 2',
-      study: 'EXP-NVG-24',
+      aircraft: aircraftName,
+      study: studyName,
       initG: Gravity.Moderee, initO: Occurrence.Occasionnel,
       resG: Gravity.Moderee, resO: Occurrence.Rare
     },
     {
-      catId: 'cat-6', // Vibrations/Flutter
+      catId: 'cat-6',
       activity: 'Phénomène Vibratoire (Flutter)',
       experimentation: 'Ouverture Domaine Vitesse',
       aircraft: 'H160 Guépard',
       study: 'AERO-DYN-05',
-      // Mitigation via telemetry reduces Gravity (preventing structural failure)
       initG: Gravity.Catastrophique, initO: Occurrence.Rare,
       resG: Gravity.Moderee, resO: Occurrence.Rare
     }
@@ -73,7 +72,7 @@ const generateSeedData = (): RiskEntry[] => {
       dreadedEvent: template.dreadedEvent,
       mitigationMeasures: template.mitigationMeasures,
       synthesis: 'Risque maîtrisé. Application stricte des fiches d\'essais et du briefing.',
-      updatedAt: Date.now() - (index * 86400000), // Stagger dates
+      updatedAt: Date.now() - (index * 86400000),
       initialRisk: {
         gravity: scenario.initG,
         occurrence: scenario.initO,
@@ -92,96 +91,236 @@ const generateSeedData = (): RiskEntry[] => {
   });
 };
 
-// --- Study Context ---
+// --- Internal Helpers ---
 
-export const getStudyContext = (): StudyContext => {
+const getDB = (): Study[] => {
   try {
-    const data = localStorage.getItem(CONTEXT_KEY);
-    if (data) return JSON.parse(data);
-    return {
-      studyName: 'Nouvelle Étude',
+    const data = localStorage.getItem(DB_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveDB = (db: Study[]) => {
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+};
+
+const getActiveStudyId = (): string | null => {
+  return localStorage.getItem(ACTIVE_STUDY_KEY);
+};
+
+const setActiveStudyId = (id: string) => {
+  localStorage.setItem(ACTIVE_STUDY_KEY, id);
+};
+
+// --- Migration & Initialization ---
+
+const initStorage = () => {
+  const dbData = localStorage.getItem(DB_KEY);
+  if (dbData) return; // DB exists
+
+  // Check for legacy data
+  const legacyRisks = localStorage.getItem(LEGACY_RISKS_KEY);
+  const legacyContext = localStorage.getItem(LEGACY_CONTEXT_KEY);
+
+  if (legacyRisks || legacyContext) {
+    // Migration
+    const risks: RiskEntry[] = legacyRisks ? JSON.parse(legacyRisks) : [];
+    const context: StudyContext = legacyContext ? JSON.parse(legacyContext) : {
+      studyName: 'Etude Importée',
       aircraft: '',
       date: new Date().toISOString().split('T')[0],
       globalSynthesis: ''
     };
-  } catch {
-    return { studyName: '', aircraft: '', date: '', globalSynthesis: '' };
+
+    const newStudy: Study = {
+      id: crypto.randomUUID(),
+      name: context.studyName || 'Nouvelle Etude',
+      aircraft: context.aircraft || '',
+      date: context.date || new Date().toISOString().split('T')[0],
+      globalSynthesis: context.globalSynthesis || '',
+      risks: risks,
+      updatedAt: Date.now()
+    };
+
+    saveDB([newStudy]);
+    setActiveStudyId(newStudy.id);
+  } else {
+    // Fresh Install: Seed Data
+    const seedStudyId = crypto.randomUUID();
+    const seedStudy: Study = {
+      id: seedStudyId,
+      name: 'Campagne PHEL-182',
+      aircraft: 'NH90 Caïman',
+      date: new Date().toISOString().split('T')[0],
+      globalSynthesis: '',
+      risks: [],
+      updatedAt: Date.now()
+    };
+    seedStudy.risks = generateSeedData(seedStudy.name, seedStudy.aircraft);
+
+    saveDB([seedStudy]);
+    setActiveStudyId(seedStudyId);
   }
 };
 
+try {
+  initStorage();
+} catch (e) {
+  console.error("Storage init failed", e);
+}
+
+// --- Study Management (New API) ---
+
+export const getAllStudies = (): Study[] => {
+  return getDB().sort((a, b) => b.updatedAt - a.updatedAt);
+};
+
+export const createNewStudy = (name: string, aircraft: string): Study => {
+  const newStudy: Study = {
+    id: crypto.randomUUID(),
+    name: name || 'Nouvelle Etude',
+    aircraft: aircraft || '',
+    date: new Date().toISOString().split('T')[0],
+    globalSynthesis: '',
+    risks: [],
+    updatedAt: Date.now()
+  };
+  const db = getDB();
+  db.push(newStudy);
+  saveDB(db);
+  setActiveStudyId(newStudy.id);
+  return newStudy;
+};
+
+export const deleteStudy = (id: string): void => {
+  let db = getDB();
+  db = db.filter(s => s.id !== id);
+  saveDB(db);
+
+  if (getActiveStudyId() === id) {
+    if (db.length > 0) {
+      setActiveStudyId(db[0].id);
+    } else {
+      localStorage.removeItem(ACTIVE_STUDY_KEY);
+    }
+  }
+};
+
+export const setCurrentStudy = (id: string): void => {
+  setActiveStudyId(id);
+};
+
+export const getCurrentStudy = (): Study => {
+  const db = getDB();
+  const activeId = getActiveStudyId();
+
+  if (activeId) {
+    const study = db.find(s => s.id === activeId);
+    if (study) return study;
+  }
+
+  // Fallback if ID invalid or not set
+  if (db.length > 0) {
+    // Sort by latest update to pick most relevant? Default to [0] ok.
+    const sorted = db.sort((a, b) => b.updatedAt - a.updatedAt);
+    setActiveStudyId(sorted[0].id);
+    return sorted[0];
+  }
+
+  // No study exists (should not happen due to initStorage, but safe fallback)
+  return createNewStudy('Nouvelle Étude', '');
+};
+
+const updateCurrentStudy = (updater: (study: Study) => void): void => {
+  const db = getDB();
+  const activeId = getActiveStudyId();
+  const index = db.findIndex(s => s.id === activeId);
+
+  if (index >= 0) {
+    updater(db[index]);
+    db[index].updatedAt = Date.now();
+    saveDB(db);
+  } else {
+    // Recovery
+    const newStudy = createNewStudy('Nouvelle Étude', '');
+    const db2 = getDB();
+    const idx2 = db2.findIndex(s => s.id === newStudy.id);
+    if (idx2 >= 0) {
+        updater(db2[idx2]);
+        db2[idx2].updatedAt = Date.now();
+        saveDB(db2);
+    }
+  }
+};
+
+// --- Legacy Adapters (Risk & Context) ---
+
+export const getStudyContext = (): StudyContext => {
+  const study = getCurrentStudy();
+  return {
+    studyName: study.name,
+    aircraft: study.aircraft,
+    date: study.date,
+    globalSynthesis: study.globalSynthesis
+  };
+};
+
 export const saveStudyContext = (context: StudyContext): void => {
-  localStorage.setItem(CONTEXT_KEY, JSON.stringify(context));
+  updateCurrentStudy(s => {
+    s.name = context.studyName;
+    s.aircraft = context.aircraft;
+    s.date = context.date;
+    s.globalSynthesis = context.globalSynthesis;
+    // Sync to risks
+    s.risks.forEach(r => {
+      r.studyNumber = s.name;
+      r.aircraft = s.aircraft;
+    });
+  });
 };
 
 export const startNewStudy = (): void => {
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.setItem(CONTEXT_KEY, JSON.stringify({
-    studyName: 'Nouvelle Étude',
-    aircraft: '',
-    date: new Date().toISOString().split('T')[0],
-    globalSynthesis: ''
-  }));
+   // Legacy behavior maps to creating a new study
+   createNewStudy('Nouvelle Étude', '');
 };
 
 // --- Risk Entries ---
 
-export const saveRisk = (risk: RiskEntry): void => {
-  const risks = getRisks();
-  const existingIndex = risks.findIndex(r => r.id === risk.id);
-
-  if (existingIndex >= 0) {
-    risks[existingIndex] = risk;
-  } else {
-    risks.push(risk);
-  }
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(risks));
+export const getRisks = (): RiskEntry[] => {
+  return getCurrentStudy().risks;
 };
 
-export const getRisks = (): RiskEntry[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (data) {
-      const parsedData = JSON.parse(data);
-      if (parsedData.length > 0) return parsedData;
+export const saveRisk = (risk: RiskEntry): void => {
+  updateCurrentStudy(s => {
+    const existingIndex = s.risks.findIndex(r => r.id === risk.id);
+    if (existingIndex >= 0) {
+      s.risks[existingIndex] = risk;
+    } else {
+      s.risks.push(risk);
     }
-
-    // Seed data ONLY if explicitly requested or for demo purposes on very first load?
-    // User requested "Enter study name THEN choose risks".
-    // So default should probably be empty if strictly following workflow, 
-    // but for demo purposes we keep seeding if "completely empty".
-    // Let's seed only if context is also missing (fresh app)
-    if (!localStorage.getItem(CONTEXT_KEY)) {
-      const seedData = generateSeedData();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(seedData));
-      return seedData;
-    }
-    return [];
-
-  } catch (e) {
-    console.error("Failed to load risks", e);
-    return [];
-  }
+  });
 };
 
 export const getRiskById = (id: string): RiskEntry | undefined => {
-  const risks = getRisks();
-  return risks.find(r => r.id === id);
+  return getRisks().find(r => r.id === id);
 };
 
 export const deleteRisk = (id: string): void => {
-  const risks = getRisks().filter(r => r.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(risks));
+  updateCurrentStudy(s => {
+    s.risks = s.risks.filter(r => r.id !== id);
+  });
 };
 
 export const createEmptyRisk = (): RiskEntry => {
-  const context = getStudyContext();
+  const study = getCurrentStudy();
   return {
     id: crypto.randomUUID(),
-    studyNumber: context.studyName || '',
+    studyNumber: study.name || '',
     experimentation: '',
     activityTitle: '',
-    aircraft: context.aircraft || '',
+    aircraft: study.aircraft || '',
     dreadedEvent: '',
     mitigationMeasures: '',
     synthesis: '',
@@ -203,13 +342,12 @@ export const createEmptyRisk = (): RiskEntry => {
   };
 };
 
-// --- Catalog Entries ---
+// --- Catalog Entries (Global) ---
 
 export const getCatalogEntries = (): RiskCatalogEntry[] => {
   try {
     const data = localStorage.getItem(CATALOG_KEY);
     if (!data) {
-      // Initialize with default if empty
       localStorage.setItem(CATALOG_KEY, JSON.stringify(DEFAULT_CATALOG));
       return DEFAULT_CATALOG;
     }
@@ -223,13 +361,11 @@ export const getCatalogEntries = (): RiskCatalogEntry[] => {
 export const saveCatalogEntry = (entry: RiskCatalogEntry): void => {
   const entries = getCatalogEntries();
   const existingIndex = entries.findIndex(e => e.id === entry.id);
-
   if (existingIndex >= 0) {
     entries[existingIndex] = entry;
   } else {
     entries.push(entry);
   }
-
   localStorage.setItem(CATALOG_KEY, JSON.stringify(entries));
 };
 
@@ -241,18 +377,29 @@ export const deleteCatalogEntry = (id: string): void => {
 // --- Import / Export ---
 
 export const exportRisksToJSON = (): string => {
-  const risks = getRisks();
-  return JSON.stringify(risks, null, 2);
+  const db = getDB();
+  return JSON.stringify(db, null, 2);
 };
 
 export const importRisksFromJSON = (jsonContent: string): void => {
   try {
-    const risks = JSON.parse(jsonContent);
-    if (!Array.isArray(risks)) throw new Error("Format JSON invalide : doit être un tableau");
+    const data = JSON.parse(jsonContent);
+    if (!Array.isArray(data)) throw new Error("Format invalide");
 
-    // REPLACE Strategy: Overwrite all risks
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(risks));
+    // Check for legacy single study export
+    if (data.length > 0 && 'initialRisk' in data[0] && !('risks' in data[0])) {
+         const newStudy = createNewStudy("Etude Importée (Legacy)", "");
+         updateCurrentStudy(s => {
+             s.risks = data as RiskEntry[];
+         });
+         return;
+    }
 
+    // Assume Study[]
+    saveDB(data);
+    if (data.length > 0) {
+        setActiveStudyId(data[0].id);
+    }
   } catch (e) {
     console.error("Failed to import JSON", e);
     throw e;
@@ -260,8 +407,19 @@ export const importRisksFromJSON = (jsonContent: string): void => {
 };
 
 export const exportRisksToCSV = (): string => {
-  const risks = getRisks();
-  if (risks.length === 0) return '';
+  const db = getDB();
+  let allRisks: RiskEntry[] = [];
+
+  db.forEach(study => {
+      const studyRisks = study.risks.map(r => ({
+          ...r,
+          studyNumber: study.name, // Force study name from context
+          aircraft: study.aircraft
+      }));
+      allRisks = [...allRisks, ...studyRisks];
+  });
+
+  if (allRisks.length === 0) return '';
 
   const headers = [
     'ID', 'Etude', 'Cahier_Manipe', 'Titre_Activite', 'Aeronef', 'Evenement_Redoute', 'Mesures_Attenuation', 'Synthese',
@@ -279,7 +437,7 @@ export const exportRisksToCSV = (): string => {
     return stringValue;
   };
 
-  const rows = risks.map(r => [
+  const rows = allRisks.map(r => [
     r.id, r.studyNumber, r.experimentation, r.activityTitle, r.aircraft, r.dreadedEvent, r.mitigationMeasures, r.synthesis,
     r.initialRisk.gravity, r.initialRisk.occurrence, r.initialRisk.exposition, r.initialRisk.detectability,
     r.residualRisk.gravity, r.residualRisk.occurrence, r.residualRisk.exposition, r.residualRisk.detectability,
@@ -293,7 +451,6 @@ export const importRisksFromCSV = (csvContent: string): void => {
   const lines = csvContent.trim().split('\n');
   if (lines.length < 2) throw new Error("Fichier CSV vide ou sans en-tête");
 
-  // Detect separator: check header for semicolon
   const header = lines[0];
   const separator = header.includes(';') ? ';' : ',';
 
@@ -301,7 +458,6 @@ export const importRisksFromCSV = (csvContent: string): void => {
     const result = [];
     let current = '';
     let inQuotes = false;
-
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
       if (char === '"') {
@@ -322,12 +478,10 @@ export const importRisksFromCSV = (csvContent: string): void => {
     return result;
   };
 
-  const newRisks: RiskEntry[] = [];
+  const importedRisks: RiskEntry[] = [];
 
-  // Skip header, start at 1
   for (let i = 1; i < lines.length; i++) {
     const vals = parseCSVLine(lines[i]);
-    // Should have at least enough columns for ID..InitD (approx 12+)
     if (vals.length < 12) continue;
 
     const newRisk: RiskEntry = {
@@ -344,38 +498,45 @@ export const importRisksFromCSV = (csvContent: string): void => {
         occurrence: (vals[9] as Occurrence) || Occurrence.TresImprobable,
         exposition: Number(vals[10]) || Exposition.Faible,
         detectability: Number(vals[11]) || Detectability.Totale,
-        computedLevel: RiskLevel.Faible // Recalculated below
+        computedLevel: RiskLevel.Faible
       },
       residualRisk: {
         gravity: Number(vals[12]) || Gravity.Negligeable,
         occurrence: (vals[13] as Occurrence) || Occurrence.TresImprobable,
         exposition: Number(vals[14]) || Exposition.Faible,
         detectability: Number(vals[15]) || Detectability.Totale,
-        computedLevel: RiskLevel.Faible // Recalculated below
+        computedLevel: RiskLevel.Faible
       },
       updatedAt: Number(vals[16]) || Date.now()
     };
 
-    // Recalculate levels to be safe
     newRisk.initialRisk.computedLevel = calculateRiskLevel(newRisk.initialRisk.gravity, newRisk.initialRisk.occurrence);
     newRisk.residualRisk.computedLevel = calculateRiskLevel(newRisk.residualRisk.gravity, newRisk.residualRisk.occurrence);
-
-    newRisks.push(newRisk);
+    importedRisks.push(newRisk);
   }
 
-  // REPLACE Strategy: Overwrite all risks
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(newRisks));
+  const grouped: Record<string, RiskEntry[]> = {};
+  importedRisks.forEach(r => {
+      const studyName = r.studyNumber || "Etude Sans Nom";
+      if (!grouped[studyName]) grouped[studyName] = [];
+      grouped[studyName].push(r);
+  });
 
-  // Update Study Context if risks exist
-  if (newRisks.length > 0) {
-    const firstRisk = newRisks[0];
-    const currentContext = getStudyContext();
-    const newContext: StudyContext = {
-      ...currentContext,
-      studyName: firstRisk.studyNumber || currentContext.studyName,
-      aircraft: firstRisk.aircraft || currentContext.aircraft,
-      // Date and Global Synthesis are not in CSV, so we keep them or default
-    };
-    saveStudyContext(newContext);
-  }
+  const newDB: Study[] = Object.keys(grouped).map(studyName => {
+     const risks = grouped[studyName];
+     const aircraft = risks.length > 0 ? risks[0].aircraft : "";
+
+     return {
+         id: crypto.randomUUID(),
+         name: studyName,
+         aircraft: aircraft,
+         date: new Date().toISOString().split('T')[0],
+         globalSynthesis: "",
+         risks: risks,
+         updatedAt: Date.now()
+     };
+  });
+
+  saveDB(newDB);
+  if (newDB.length > 0) setActiveStudyId(newDB[0].id);
 };
