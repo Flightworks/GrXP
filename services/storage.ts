@@ -137,6 +137,7 @@ const initStorage = () => {
     const newStudy: Study = {
       id: crypto.randomUUID(),
       name: context.studyName || 'Nouvelle Etude',
+      experimentation: '', // Default for migrated
       aircraft: context.aircraft || '',
       date: context.date || new Date().toISOString().split('T')[0],
       globalSynthesis: context.globalSynthesis || '',
@@ -152,6 +153,7 @@ const initStorage = () => {
     const seedStudy: Study = {
       id: seedStudyId,
       name: 'Campagne PHEL-182',
+      experimentation: 'Qualification SHOL Jour/Nuit',
       aircraft: 'NH90 Caïman',
       date: new Date().toISOString().split('T')[0],
       globalSynthesis: '',
@@ -177,10 +179,11 @@ export const getAllStudies = (): Study[] => {
   return getDB().sort((a, b) => b.updatedAt - a.updatedAt);
 };
 
-export const createNewStudy = (name: string, aircraft: string): Study => {
+export const createNewStudy = (name: string, aircraft: string, experimentation: string = ''): Study => {
   const newStudy: Study = {
     id: crypto.randomUUID(),
     name: name || 'Nouvelle Etude',
+    experimentation: experimentation || '',
     aircraft: aircraft || '',
     date: new Date().toISOString().split('T')[0],
     globalSynthesis: '',
@@ -248,9 +251,9 @@ const updateCurrentStudy = (updater: (study: Study) => void): void => {
     const db2 = getDB();
     const idx2 = db2.findIndex(s => s.id === newStudy.id);
     if (idx2 >= 0) {
-        updater(db2[idx2]);
-        db2[idx2].updatedAt = Date.now();
-        saveDB(db2);
+      updater(db2[idx2]);
+      db2[idx2].updatedAt = Date.now();
+      saveDB(db2);
     }
   }
 };
@@ -261,6 +264,7 @@ export const getStudyContext = (): StudyContext => {
   const study = getCurrentStudy();
   return {
     studyName: study.name,
+    experimentation: study.experimentation || '',
     aircraft: study.aircraft,
     date: study.date,
     globalSynthesis: study.globalSynthesis
@@ -270,20 +274,22 @@ export const getStudyContext = (): StudyContext => {
 export const saveStudyContext = (context: StudyContext): void => {
   updateCurrentStudy(s => {
     s.name = context.studyName;
+    s.experimentation = context.experimentation;
     s.aircraft = context.aircraft;
     s.date = context.date;
     s.globalSynthesis = context.globalSynthesis;
     // Sync to risks
     s.risks.forEach(r => {
       r.studyNumber = s.name;
+      r.experimentation = s.experimentation;
       r.aircraft = s.aircraft;
     });
   });
 };
 
 export const startNewStudy = (): void => {
-   // Legacy behavior maps to creating a new study
-   createNewStudy('Nouvelle Étude', '');
+  // Legacy behavior maps to creating a new study
+  createNewStudy('Nouvelle Étude', '');
 };
 
 // --- Risk Entries ---
@@ -318,7 +324,7 @@ export const createEmptyRisk = (): RiskEntry => {
   return {
     id: crypto.randomUUID(),
     studyNumber: study.name || '',
-    experimentation: '',
+    experimentation: study.experimentation || '',
     activityTitle: '',
     aircraft: study.aircraft || '',
     dreadedEvent: '',
@@ -388,17 +394,17 @@ export const importRisksFromJSON = (jsonContent: string): void => {
 
     // Check for legacy single study export
     if (data.length > 0 && 'initialRisk' in data[0] && !('risks' in data[0])) {
-         const newStudy = createNewStudy("Etude Importée (Legacy)", "");
-         updateCurrentStudy(s => {
-             s.risks = data as RiskEntry[];
-         });
-         return;
+      const newStudy = createNewStudy("Etude Importée (Legacy)", "");
+      updateCurrentStudy(s => {
+        s.risks = data as RiskEntry[];
+      });
+      return;
     }
 
     // Assume Study[]
     saveDB(data);
     if (data.length > 0) {
-        setActiveStudyId(data[0].id);
+      setActiveStudyId(data[0].id);
     }
   } catch (e) {
     console.error("Failed to import JSON", e);
@@ -411,12 +417,12 @@ export const exportRisksToCSV = (): string => {
   let allRisks: RiskEntry[] = [];
 
   db.forEach(study => {
-      const studyRisks = study.risks.map(r => ({
-          ...r,
-          studyNumber: study.name, // Force study name from context
-          aircraft: study.aircraft
-      }));
-      allRisks = [...allRisks, ...studyRisks];
+    const studyRisks = study.risks.map(r => ({
+      ...r,
+      studyNumber: study.name, // Force study name from context
+      aircraft: study.aircraft
+    }));
+    allRisks = [...allRisks, ...studyRisks];
   });
 
   if (allRisks.length === 0) return '';
@@ -517,24 +523,26 @@ export const importRisksFromCSV = (csvContent: string): void => {
 
   const grouped: Record<string, RiskEntry[]> = {};
   importedRisks.forEach(r => {
-      const studyName = r.studyNumber || "Etude Sans Nom";
-      if (!grouped[studyName]) grouped[studyName] = [];
-      grouped[studyName].push(r);
+    const studyName = r.studyNumber || "Etude Sans Nom";
+    if (!grouped[studyName]) grouped[studyName] = [];
+    grouped[studyName].push(r);
   });
 
   const newDB: Study[] = Object.keys(grouped).map(studyName => {
-     const risks = grouped[studyName];
-     const aircraft = risks.length > 0 ? risks[0].aircraft : "";
+    const risks = grouped[studyName];
+    const aircraft = risks.length > 0 ? risks[0].aircraft : "";
+    const experimentation = risks.length > 0 ? risks[0].experimentation : "";
 
-     return {
-         id: crypto.randomUUID(),
-         name: studyName,
-         aircraft: aircraft,
-         date: new Date().toISOString().split('T')[0],
-         globalSynthesis: "",
-         risks: risks,
-         updatedAt: Date.now()
-     };
+    return {
+      id: crypto.randomUUID(),
+      name: studyName,
+      experimentation: experimentation,
+      aircraft: aircraft,
+      date: new Date().toISOString().split('T')[0],
+      globalSynthesis: "",
+      risks: risks,
+      updatedAt: Date.now()
+    };
   });
 
   saveDB(newDB);

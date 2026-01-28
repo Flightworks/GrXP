@@ -10,6 +10,7 @@ const StudyManager: React.FC = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [newStudyName, setNewStudyName] = useState('');
     const [newAircraft, setNewAircraft] = useState('');
+    const [newExperimentation, setNewExperimentation] = useState('');
     const navigate = useNavigate();
 
     const loadStudies = () => {
@@ -26,9 +27,10 @@ const StudyManager: React.FC = () => {
         e.preventDefault();
         if (!newStudyName.trim()) return;
 
-        const newStudy = createNewStudy(newStudyName, newAircraft);
+        const newStudy = createNewStudy(newStudyName, newAircraft, newExperimentation);
         setNewStudyName('');
         setNewAircraft('');
+        setNewExperimentation('');
         setIsCreating(false);
         loadStudies();
         // Optional: Auto-navigate or just stay on list?
@@ -92,6 +94,16 @@ const StudyManager: React.FC = () => {
                                     className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1">Expérimentation (Groupe)</label>
+                                <input
+                                    type="text"
+                                    value={newExperimentation}
+                                    onChange={e => setNewExperimentation(e.target.value)}
+                                    placeholder="Ex: Qualification SHOL Jour/Nuit"
+                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
                             <div className="flex justify-end gap-3 pt-4">
                                 <button
                                     type="button"
@@ -148,6 +160,11 @@ const StudyManager: React.FC = () => {
                                     <Plane className="w-4 h-4" />
                                     <span>{study.aircraft || 'Non spécifié'}</span>
                                 </div>
+                                {study.experimentation && (
+                                    <div className="flex items-center gap-2 text-xs font-bold text-blue-600 uppercase tracking-tighter">
+                                        {study.experimentation}
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-2 text-sm text-slate-500">
                                     <Calendar className="w-4 h-4" />
                                     <span>{new Date(study.updatedAt).toLocaleDateString()}</span>

@@ -143,7 +143,9 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
 
     const handleCopySynthesis = () => {
         let text = `SYNTHÈSE GRXP\n`;
-        text += `ÉTUDE: ${context.studyName} (${context.aircraft})\n`;
+        text += `ÉTUDE: ${context.studyName}\n`;
+        text += `EXPÉRIMENTATION: ${context.experimentation}\n`;
+        text += `AÉRONEF: ${context.aircraft}\n`;
         text += `DATE: ${new Date().toLocaleDateString()}\n`;
         text += `---------------------------\n`;
         text += `SYNTHÈSE GLOBALE: ${context.globalSynthesis}\n\n`;
@@ -316,6 +318,7 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
                     <h1 className="text-2xl font-black uppercase">Synthèse des Risques</h1>
                     <div className="flex justify-between mt-2 text-sm">
                         <span>Étude: <b>{context.studyName}</b></span>
+                        <span>Expérimentation: <b>{context.experimentation}</b></span>
                         <span>Aéronef: <b>{context.aircraft}</b></span>
                         <span>Date: {new Date().toLocaleDateString()}</span>
                     </div>

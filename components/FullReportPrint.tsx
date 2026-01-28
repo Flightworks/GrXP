@@ -33,6 +33,10 @@ const FullReportPrint: React.FC<FullReportPrintProps> = ({ context, risks }) => 
             <span className="text-lg text-black">{context.studyName}</span>
           </div>
           <div>
+            <span className="block text-xs uppercase text-slate-400">Expérimentation</span>
+            <span className="text-lg text-black">{context.experimentation}</span>
+          </div>
+          <div>
             <span className="block text-xs uppercase text-slate-400">Aéronef</span>
             <span className="text-lg text-black">{context.aircraft}</span>
           </div>

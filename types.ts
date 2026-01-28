@@ -67,6 +67,7 @@ export interface RiskCatalogEntry {
 
 export interface StudyContext {
   studyName: string;
+  experimentation: string;
   aircraft: string;
   date: string;
   globalSynthesis: string;
@@ -75,6 +76,7 @@ export interface StudyContext {
 export interface Study {
   id: string;
   name: string;
+  experimentation: string;
   aircraft: string;
   date: string;
   globalSynthesis: string;

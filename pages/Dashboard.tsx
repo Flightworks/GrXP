@@ -12,7 +12,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [risks, setRisks] = useState<RiskEntry[]>([]);
-  const [context, setContext] = useState<StudyContext>({ studyName: '', aircraft: '', date: '', globalSynthesis: '' });
+  const [context, setContext] = useState<StudyContext>({ studyName: '', experimentation: '', aircraft: '', date: '', globalSynthesis: '' });
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
 
   const loadData = () => {
@@ -55,7 +55,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       id: crypto.randomUUID(),
       activityTitle: entry.title, // Maps to Risk Title
       studyNumber: context.studyName,
-      experimentation: 'Nouvelle Expérimentation', // Default placeholder
+      experimentation: context.experimentation || 'Nouvelle Expérimentation', // Use context or placeholder
       aircraft: context.aircraft,
       dreadedEvent: entry.dreadedEvent,
       mitigationMeasures: entry.mitigationMeasures,
@@ -121,6 +121,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               className="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 font-medium no-print"
             />
           </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Expérimentation (Groupe)</label>
+            <input
+              type="text"
+              value={context.experimentation}
+              onChange={(e) => handleContextChange('experimentation', e.target.value)}
+              placeholder="Ex: Qualification SHOL Jour/Nuit"
+              className="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 font-medium no-print"
+            />
+          </div>
         </div>
       </div>
 
@@ -167,6 +177,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <h1 className="text-2xl font-black uppercase">Synthèse des Risques</h1>
           <div className="flex justify-between mt-2 text-sm">
             <span>Étude: <b>{context.studyName}</b></span>
+            <span>Expérimentation: <b>{context.experimentation}</b></span>
             <span>Aéronef: <b>{context.aircraft}</b></span>
             <span>Date: {new Date().toLocaleDateString()}</span>
           </div>
