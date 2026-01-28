@@ -193,7 +193,7 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
                 {/* 1. Exports PDF / Print */}
                 <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                        <Printer className="w-4 h-4" /> Rapports & Documents
+                        <Printer className="w-4 h-4" /> Rapports & Documents {context.studyName && <span className="text-slate-900 normal-case ml-2">— {context.studyName}</span>}
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <button
