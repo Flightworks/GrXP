@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Download, Upload, Printer, Copy, AlertTriangle, FileText, LayoutDashboard, Save, ArrowLeft } from 'lucide-react';
 import { RiskEntry } from '../types';
-import { getStudyContext, exportRisksToCSV, exportRisksToJSON, importRisksFromCSV, importRisksFromJSON, getRisks } from '../services/storage';
+import { getStudyContext, exportRisksToCSV, exportRisksToJSON, importRisksFromCSV, importRisksFromJSON, getRisks, exportToWord } from '../services/storage';
 import FullReportPrint from '../components/FullReportPrint';
 import html2pdf from 'html2pdf.js';
 import SynthesisMatrix from '../components/SynthesisMatrix';
@@ -174,6 +174,15 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
         navigator.clipboard.writeText(text).then(() => alert('Synthèse Markdown copiée dans le presse-papier'));
     };
 
+    const handleWordExport = () => {
+        const blob = exportToWord(risks);
+        let safeName = (context.studyName || 'Etude').trim();
+        safeName = safeName.replace(/[^a-z0-9\-_]/gi, '_').replace(/_+/g, '_');
+        if (!safeName) safeName = 'Etude_Sans_Nom';
+
+        triggerDownload(blob, `GRE_Synthese_${safeName}.doc`);
+    };
+
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-20">
 
@@ -232,6 +241,19 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
                             <div className="text-left">
                                 <span className="block font-bold text-slate-800">Télécharger PDF</span>
                                 <span className="text-xs text-slate-500">Générer le rapport PDF directement</span>
+                            </div>
+                        </button>
+
+                        <button
+                            onClick={handleWordExport}
+                            className="p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl flex items-center gap-4 transition-all group"
+                        >
+                            <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <FileText className="w-5 h-5" />
+                            </div>
+                            <div className="text-left">
+                                <span className="block font-bold text-slate-800">Exporter GRE (Word)</span>
+                                <span className="text-xs text-slate-500">Format .doc éditable</span>
                             </div>
                         </button>
 
