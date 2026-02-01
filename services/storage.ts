@@ -548,3 +548,78 @@ export const importRisksFromCSV = (csvContent: string): void => {
   saveDB(newDB);
   if (newDB.length > 0) setActiveStudyId(newDB[0].id);
 };
+
+export const exportToWord = (risks: RiskEntry[]): Blob => {
+  const getRiskColor = (level: RiskLevel): { bg: string, text: string } => {
+    switch (level) {
+      case RiskLevel.Inacceptable: return { bg: '#DC2626', text: '#FFFFFF' };
+      case RiskLevel.Fort: return { bg: '#F97316', text: '#FFFFFF' };
+      case RiskLevel.Faible: return { bg: '#FDE047', text: '#0F172A' };
+      case RiskLevel.Usuel: return { bg: '#22C55E', text: '#FFFFFF' };
+      default: return { bg: '#E5E7EB', text: '#1F2937' };
+    }
+  };
+
+  const rows = risks.map(risk => {
+    const level = risk.residualRisk.computedLevel;
+    const { bg, text } = getRiskColor(level);
+    const mitigation = risk.mitigationMeasures ? risk.mitigationMeasures.replace(/\n/g, '<br/>') : '';
+
+    return `
+      <tr style="border: 1px solid black;">
+        <td style="padding: 8px; vertical-align: top; border: 1px solid black; width: 30%;">
+          <div style="font-weight: bold; font-family: Arial, sans-serif; margin-bottom: 4px; color: #1e293b;">${risk.activityTitle}</div>
+          <div style="font-family: Arial, sans-serif; color: #475569; font-size: 0.9em;">${risk.dreadedEvent}</div>
+        </td>
+        <td style="padding: 8px; vertical-align: top; border: 1px solid black; font-family: Arial, sans-serif; width: 50%; color: #334155;">
+          ${mitigation}
+        </td>
+        <td style="padding: 8px; vertical-align: top; border: 1px solid black; width: 20%; text-align: center;">
+          <div style="
+            background-color: ${bg};
+            color: ${text};
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-family: Arial, sans-serif;
+            display: inline-block;
+            font-size: 0.8em;
+          ">
+            ${level}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  const html = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head>
+      <meta charset='utf-8'>
+      <title>Export GRE</title>
+      <style>
+        body { font-family: Arial, sans-serif; }
+        table { border-collapse: collapse; width: 100%; }
+      </style>
+    </head>
+    <body>
+      <h2 style="font-family: Arial, sans-serif; color: #0f172a; border-bottom: 2px solid #0f172a; padding-bottom: 10px;">Synthèse des Risques (GRE)</h2>
+      <table>
+        <thead>
+          <tr style="background-color: #f1f5f9;">
+            <th style="border: 1px solid black; padding: 8px; text-align: left; font-family: Arial, sans-serif; color: #334155; font-weight: bold;">Risque / Événement Redouté</th>
+            <th style="border: 1px solid black; padding: 8px; text-align: left; font-family: Arial, sans-serif; color: #334155; font-weight: bold;">Mesures d'Atténuation (MA)</th>
+            <th style="border: 1px solid black; padding: 8px; text-align: center; font-family: Arial, sans-serif; color: #334155; font-weight: bold;">Risque Résiduel (RR)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  return new Blob(['\ufeff', html], { type: 'application/msword' });
+};
