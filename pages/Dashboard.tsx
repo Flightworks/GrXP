@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { RiskEntry, RiskCatalogEntry, StudyContext } from '../types';
 import { getRisks, deleteRisk, saveRisk, getStudyContext, saveStudyContext, startNewStudy } from '../services/storage';
-import { Search, Plus, BookOpen, Trash2, FileText, RefreshCw } from 'lucide-react';
+import { Search, Plus, BookOpen, Trash2, FileText, RefreshCw, FileDown } from 'lucide-react';
 import SynthesisMatrix from '../components/SynthesisMatrix';
 import CatalogModal from '../components/CatalogModal';
 import { calculateRiskLevel } from '../constants';
+import { generateHtmlContent, downloadHtmlBlob } from '../services/htmlExport';
 
 interface DashboardProps {
   onNavigate: (page: string, id?: string) => void;
@@ -81,7 +82,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     setIsCatalogOpen(false);
   };
 
-
+  const handleExport = () => {
+    const content = generateHtmlContent(context, risks);
+    const safeName = context.studyName ? context.studyName.replace(/[^a-z0-9]/gi, '_') : 'Nouvelle_Etude';
+    const filename = `Synthese_Risques_${safeName}.doc`;
+    downloadHtmlBlob(content, filename);
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -167,8 +173,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       <div className="w-full">
         <div className="flex justify-between items-end mb-2 no-print">
           <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest">2. Synthèse & Matrice</h2>
-          <div className="text-xs text-slate-400">
-            {risks.length} risque(s) identifié(s)
+          <div className="flex items-center gap-4">
+            {risks.length > 0 && (
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors border border-blue-100"
+                title="Exporter pour Word"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                Exporter (.doc)
+              </button>
+            )}
+            <div className="text-xs text-slate-400">
+              {risks.length} risque(s) identifié(s)
+            </div>
           </div>
         </div>
 
