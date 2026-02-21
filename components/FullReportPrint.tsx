@@ -1,7 +1,7 @@
 import React from 'react';
-import { RiskEntry, StudyContext } from '../types';
+import { RiskEntry, StudyContext, Exposition, Detectability } from '../types';
 import MatrixGrid from './MatrixGrid';
-import { getRiskColor } from '../constants';
+import { getRiskColor, EXPOSITION_OPTIONS, DETECTABILITY_OPTIONS } from '../constants';
 
 interface FullReportPrintProps {
   context: StudyContext;
@@ -21,6 +21,9 @@ const FullReportPrint: React.FC<FullReportPrintProps> = ({ context, risks }) => 
   });
 
   const experimentations = Object.keys(groupedRisks).sort();
+
+  const getExpositionLabel = (val: Exposition) => EXPOSITION_OPTIONS.find(o => o.value === val)?.label || val;
+  const getDetectabilityLabel = (val: Detectability) => DETECTABILITY_OPTIONS.find(o => o.value === val)?.label || val;
 
   return (
     <div className="w-full mx-auto bg-white">
@@ -132,11 +135,11 @@ const FullReportPrint: React.FC<FullReportPrintProps> = ({ context, risks }) => 
                     <div className="grid grid-cols-2 gap-2 text-[10px] border-t border-slate-100 pt-2 mt-auto">
                       <div>
                         <span className="block text-slate-400">Exposition:</span>
-                        <b>{risk.initialRisk.exposition}</b> (Init) → <b>{risk.residualRisk.exposition}</b> (Res)
+                        <b>{getExpositionLabel(risk.initialRisk.exposition)}</b> (Init) → <b>{getExpositionLabel(risk.residualRisk.exposition)}</b> (Res)
                       </div>
                       <div>
                         <span className="block text-slate-400">Détectabilité:</span>
-                        <b>{risk.initialRisk.detectability}</b> (Init) → <b>{risk.residualRisk.detectability}</b> (Res)
+                        <b>{getDetectabilityLabel(risk.initialRisk.detectability)}</b> (Init) → <b>{getDetectabilityLabel(risk.residualRisk.detectability)}</b> (Res)
                       </div>
                     </div>
                   </div>
