@@ -669,8 +669,6 @@ export const exportToWord = (risks: RiskEntry[]): Blob => {
 
       <h4 style="font-family: Arial, sans-serif; color: #64748b; margin-bottom: 4px; font-size: 10pt; text-transform: uppercase;">Synthèse</h4>
       <p style="font-family: Arial, sans-serif; color: #334155; margin-top: 0; margin-bottom: 25px;">${risk.synthesis || "Non renseignée"}</p>
-
-      <h4 style="font-family: Arial, sans-serif; color: #1e293b; margin-bottom: 10px; font-size: 12pt; text-align: center;">Matrice de Transition (I = Initial, R = Résiduel)</h4>
       ${transitionMatrixHTML}
     `;
   }).join('');

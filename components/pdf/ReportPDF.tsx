@@ -111,6 +111,29 @@ const styles = StyleSheet.create({
         fontSize: 8,
         color: '#94a3b8',
     },
+    mitigationContainer: {
+        backgroundColor: '#f0f9ff',
+        borderWidth: 1,
+        borderColor: '#bae6fd',
+        borderLeftWidth: 4,
+        borderLeftColor: '#0ea5e9',
+        borderRadius: 6,
+        padding: 12,
+        marginTop: 15,
+        marginBottom: 15,
+    },
+    mitigationLabel: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#0369a1',
+        textTransform: 'uppercase',
+        marginBottom: 6,
+    },
+    mitigationValue: {
+        fontSize: 11,
+        color: '#0f172a',
+        lineHeight: 1.5,
+    },
     // Matrix styles
     matrixSection: {
         alignItems: 'center',
@@ -436,8 +459,10 @@ export const ReportPDF: React.FC<ReportPDFProps> = ({ risks, context }) => {
                             <Text style={styles.label}>Événement Redouté</Text>
                             <Text style={styles.value}>{risk.dreadedEvent || "Non renseigné"}</Text>
 
-                            <Text style={styles.label}>Mesures d'Atténuation</Text>
-                            <Text style={styles.value}>{risk.mitigationMeasures || "Non renseignées"}</Text>
+                            <View style={styles.mitigationContainer}>
+                                <Text style={styles.mitigationLabel}>Mesures d'Atténuation</Text>
+                                <Text style={styles.mitigationValue}>{risk.mitigationMeasures || "Non renseignées"}</Text>
+                            </View>
 
                             <View style={{ flexDirection: 'row', marginTop: 15 }}>
                                 <View style={{ flex: 1, paddingRight: 10 }}>
@@ -463,10 +488,7 @@ export const ReportPDF: React.FC<ReportPDFProps> = ({ risks, context }) => {
                                 </View>
                             )}
                         </View>
-
-                        <Text style={styles.sectionTitle}>Matrice de Transition (Initial → Résiduel)</Text>
                         <RiskTransitionMatrix risk={risk} />
-
                         <Text style={styles.footer} fixed>
                             Généré par GrXP - {new Date().toLocaleDateString()}
                         </Text>

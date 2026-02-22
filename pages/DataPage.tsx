@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Download, Upload, Printer, Copy, AlertTriangle, FileText, Save, ArrowLeft } from 'lucide-react';
 import { RiskEntry } from '../types';
 import { getStudyContext, exportRisksToCSV, exportRisksToJSON, importRisksFromCSV, importRisksFromJSON, getRisks, exportToWord } from '../services/storage';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { PDFDownloadLink, PDFViewer } from '@react-pdf/renderer';
 import { ReportPDF } from '../components/pdf/ReportPDF';
 import { SynthesisPDF } from '../components/pdf/SynthesisPDF';
 
@@ -13,6 +13,7 @@ interface DataPageProps {
 const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
     const context = getStudyContext();
     const [risks, setRisks] = useState<RiskEntry[]>(getRisks());
+    const [previewType, setPreviewType] = useState<'synth' | 'full' | 'word' | null>(null);
 
     // --- Download Logic ---
     const triggerDownload = (blob: Blob, filename: string) => {
@@ -117,7 +118,42 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
         if (!safeName) safeName = 'Etude_Sans_Nom';
 
         triggerDownload(blob, `GRE_Synthese_${safeName}.doc`);
+        triggerDownload(blob, `GRE_Synthese_${safeName}.doc`);
     };
+
+    if (previewType === 'synth') {
+        return (
+            <div className="absolute inset-0 bg-white z-50 flex flex-col">
+                <button onClick={() => setPreviewType(null)} className="p-4 bg-slate-800 text-white font-bold">Fermer l'aperçu PDF</button>
+                <PDFViewer width="100%" height="100%">
+                    <SynthesisPDF context={context} risks={risks} />
+                </PDFViewer>
+            </div>
+        );
+    }
+
+    if (previewType === 'full') {
+        return (
+            <div className="absolute inset-0 bg-white z-50 flex flex-col">
+                <button onClick={() => setPreviewType(null)} className="p-4 bg-slate-800 text-white font-bold">Fermer l'aperçu PDF Complet</button>
+                <PDFViewer width="100%" height="100%">
+                    <ReportPDF context={context} risks={risks} />
+                </PDFViewer>
+            </div>
+        );
+    }
+
+    if (previewType === 'word') {
+        // Quick hack: extract word HTML to display in iframe
+        const blob = exportToWord(risks);
+        const url = URL.createObjectURL(blob);
+        return (
+            <div className="absolute inset-0 bg-white z-50 flex flex-col">
+                <button onClick={() => setPreviewType(null)} className="p-4 bg-slate-800 text-white font-bold">Fermer l'aperçu Word (HTML) -&gt; N'oubliez pas les couleurs de fond !</button>
+                <iframe src={url} width="100%" height="100%" className="bg-white" />
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-20">
@@ -158,6 +194,10 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
                             </div>
                         </PDFDownloadLink>
 
+                        <button onClick={() => setPreviewType('synth')} className="p-4 bg-blue-50 text-blue-800 border-2 border-blue-200 rounded-xl" id="preview-synth-btn">
+                            Aperçu Synthèse
+                        </button>
+
                         <PDFDownloadLink
                             document={<ReportPDF context={context} risks={risks} />}
                             fileName={`Rapport_Complet_GrXP_${(context.studyName || 'Etude').replace(/[^a-z0-9\-_]/gi, '_')}.pdf`}
@@ -175,6 +215,10 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
                             </div>
                         </PDFDownloadLink>
 
+                        <button onClick={() => setPreviewType('full')} className="p-4 bg-blue-50 text-blue-800 border-2 border-blue-200 rounded-xl" id="preview-full-btn">
+                            Aperçu Complet
+                        </button>
+
                         <button
                             onClick={handleWordExport}
                             className="p-4 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center gap-4 transition-all group"
@@ -186,6 +230,10 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
                                 <span className="block font-bold text-slate-800 dark:text-slate-200">Exporter GRE (Word)</span>
                                 <span className="text-xs text-slate-500 dark:text-slate-400">Format .doc éditable</span>
                             </div>
+                        </button>
+
+                        <button onClick={() => setPreviewType('word')} className="p-4 bg-blue-50 text-blue-800 border-2 border-blue-200 rounded-xl" id="preview-word-btn">
+                            Aperçu Word
                         </button>
 
                         <button
