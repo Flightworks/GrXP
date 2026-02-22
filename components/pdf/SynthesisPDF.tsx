@@ -1,6 +1,7 @@
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
-import { RiskEntry, StudyContext } from '../../types';
+import { RiskEntry, StudyContext, Gravity, Occurrence } from '../../types';
+import { calculateRiskLevel } from '../../constants';
 
 const styles = StyleSheet.create({
     page: {
@@ -97,6 +98,116 @@ const styles = StyleSheet.create({
         right: 30,
         fontSize: 8,
         color: '#94a3b8',
+    },
+    // Matrix styles
+    matrixSection: {
+        alignItems: 'center',
+        marginVertical: 15,
+    },
+    matrixContainer: {
+        flexDirection: 'row',
+        marginBottom: 10,
+        justifyContent: 'center',
+    },
+    matrixYAxis: {
+        width: 15,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 5,
+    },
+    matrixYLabel: {
+        transform: 'rotate(-90)',
+        fontSize: 8,
+        color: '#94a3b8',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        width: 60,
+        textAlign: 'center',
+    },
+    matrixGrid: {
+        flexDirection: 'column',
+    },
+    matrixXHeaderRow: {
+        flexDirection: 'row',
+        marginLeft: 15,
+        marginBottom: 4,
+    },
+    matrixXLabel: {
+        width: 35,
+        textAlign: 'center',
+        fontSize: 8,
+        color: '#94a3b8',
+        fontWeight: 'bold',
+        marginRight: 4,
+    },
+    matrixRow: {
+        flexDirection: 'row',
+        marginBottom: 4,
+        alignItems: 'center',
+    },
+    matrixRowLabel: {
+        width: 15,
+        fontSize: 8,
+        color: '#94a3b8',
+        fontWeight: 'bold',
+        textAlign: 'right',
+        paddingRight: 4,
+    },
+    matrixCell: {
+        width: 35,
+        height: 35,
+        borderRadius: 4,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 4,
+    },
+    matrixCellText: {
+        fontSize: 10,
+        fontWeight: 'heavy',
+        color: '#ffffff',
+    },
+    matrixCellTextDark: {
+        fontSize: 10,
+        fontWeight: 'heavy',
+        color: '#0f172a',
+    },
+    matrixXFooter: {
+        marginTop: 4,
+        marginLeft: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 152, // 4 * 39
+    },
+    matrixXFooterLabel: {
+        fontSize: 8,
+        color: '#94a3b8',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    legendContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 5,
+        marginBottom: 10,
+    },
+    legendItem: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        marginHorizontal: 8,
+    },
+    legendColorBar: {
+        width: 30,
+        height: 4,
+        borderRadius: 2,
+        marginBottom: 3,
+    },
+    legendLabel: {
+        fontSize: 7,
+        color: '#94a3b8',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
     }
 });
 
@@ -119,6 +230,70 @@ interface SynthesisPDFProps {
     risks: RiskEntry[];
     context: StudyContext;
 }
+
+const VisualMatrix: React.FC<{ risks: RiskEntry[] }> = ({ risks }) => {
+    const rows = [4, 3, 2, 1] as Gravity[];
+    const cols = ['A', 'B', 'C', 'D'] as Occurrence[];
+
+    const getRisksInCell = (g: Gravity, o: Occurrence) => {
+        return risks.filter(r => r.residualRisk.gravity === g && r.residualRisk.occurrence === o);
+    };
+
+    return (
+        <View style={styles.matrixSection}>
+            <View style={styles.matrixContainer}>
+                {/* Y Axis Label */}
+                <View style={styles.matrixYAxis}>
+                    <Text style={styles.matrixYLabel}>Gravité</Text>
+                </View>
+
+                {/* Matrix Content */}
+                <View style={styles.matrixGrid}>
+                    {/* X Axis Header */}
+                    <View style={styles.matrixXHeaderRow}>
+                        {cols.map(c => <Text key={c} style={styles.matrixXLabel}>{c}</Text>)}
+                    </View>
+
+                    {/* Matrix Rows */}
+                    {rows.map(row => (
+                        <View key={row} style={styles.matrixRow}>
+                            <Text style={styles.matrixRowLabel}>{row}</Text>
+                            {cols.map(col => {
+                                const level = calculateRiskLevel(row, col);
+                                const cellRisks = getRisksInCell(row, col);
+                                const count = cellRisks.length;
+                                const bgColor = getLevelColor(level);
+                                const opacity = count === 0 ? 0.3 : 1;
+                                const textColorStyle = level === 'Faible' ? styles.matrixCellTextDark : styles.matrixCellText;
+
+                                return (
+                                    <View key={`${row}-${col}`} style={[styles.matrixCell, { backgroundColor: bgColor, opacity }]}>
+                                        {count > 0 && <Text style={textColorStyle}>{count}</Text>}
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    ))}
+
+                    {/* X Axis Footer */}
+                    <View style={styles.matrixXFooter}>
+                        <Text style={styles.matrixXFooterLabel}>Occurrence</Text>
+                    </View>
+                </View>
+            </View>
+
+            {/* Legend */}
+            <View style={styles.legendContainer}>
+                {['Usuel', 'Faible', 'Fort', 'Inacceptable'].map(lvl => (
+                    <View key={lvl} style={styles.legendItem}>
+                        <View style={[styles.legendColorBar, { backgroundColor: getLevelColor(lvl) }]} />
+                        <Text style={styles.legendLabel}>{lvl.substring(0, 4)}</Text>
+                    </View>
+                ))}
+            </View>
+        </View>
+    );
+};
 
 export const SynthesisPDF: React.FC<SynthesisPDFProps> = ({ risks, context }) => {
     return (
@@ -143,6 +318,8 @@ export const SynthesisPDF: React.FC<SynthesisPDFProps> = ({ risks, context }) =>
                         <Text style={{ fontSize: 10, color: '#334155', lineHeight: 1.4 }}>{context.globalSynthesis}</Text>
                     </View>
                 )}
+
+                <VisualMatrix risks={risks} />
 
                 <Text style={styles.sectionTitle}>Liste des Risques</Text>
 
