@@ -2,121 +2,183 @@ import { RiskEntry, StudyContext, RiskLevel } from '../types';
 
 // Color mapping based on constants.ts (Tailwind classes to Hex)
 const RISK_COLORS: Record<RiskLevel, { bg: string; text: string; border: string }> = {
-  [RiskLevel.Inacceptable]: { bg: '#DC2626', text: '#FFFFFF', border: '#991B1B' }, // red-600, white, red-800
-  [RiskLevel.Fort]: { bg: '#F97316', text: '#FFFFFF', border: '#C2410C' },         // orange-500, white, orange-700
-  [RiskLevel.Faible]: { bg: '#FDE047', text: '#0F172A', border: '#EAB308' },       // yellow-300, slate-900, yellow-500
-  [RiskLevel.Usuel]: { bg: '#22C55E', text: '#FFFFFF', border: '#15803D' },        // green-500, white, green-700
+  [RiskLevel.Inacceptable]: { bg: '#DC2626', text: '#FFFFFF', border: '#991B1B' },
+  [RiskLevel.Fort]: { bg: '#F97316', text: '#FFFFFF', border: '#C2410C' },
+  [RiskLevel.Faible]: { bg: '#FDE047', text: '#0F172A', border: '#EAB308' },
+  [RiskLevel.Usuel]: { bg: '#22C55E', text: '#FFFFFF', border: '#15803D' },
 };
 
-const DEFAULT_COLOR = { bg: '#E5E7EB', text: '#1F2937', border: '#D1D5DB' }; // gray-200, gray-800, gray-300
+const DEFAULT_COLOR = { bg: '#E5E7EB', text: '#1F2937', border: '#D1D5DB' };
 
-const getRiskStyle = (level: RiskLevel) => {
-  return RISK_COLORS[level] || DEFAULT_COLOR;
-};
+const getRiskStyle = (level: RiskLevel) => RISK_COLORS[level] || DEFAULT_COLOR;
 
-const formatDate = (dateString: string) => {
-  if (!dateString) return new Date().toLocaleDateString('fr-FR');
-  return dateString;
+const formatDate = (dateString: string) => dateString ? dateString : new Date().toLocaleDateString('fr-FR');
+
+const calculateComputedLevel = (g: number, o: string): RiskLevel => {
+  if (g === 1) {
+    if (o === 'A' || o === 'B' || o === 'C') return RiskLevel.Usuel;
+    return RiskLevel.Faible;
+  }
+  if (g === 2) {
+    if (o === 'A' || o === 'B') return RiskLevel.Faible;
+    return RiskLevel.Fort;
+  }
+  if (g === 3) {
+    if (o === 'A') return RiskLevel.Faible;
+    if (o === 'B') return RiskLevel.Fort;
+    return RiskLevel.Inacceptable;
+  }
+  if (g === 4) {
+    if (o === 'A') return RiskLevel.Fort;
+    return RiskLevel.Inacceptable;
+  }
+  return RiskLevel.Faible;
 };
 
 export const generateHtmlContent = (context: StudyContext, risks: RiskEntry[]): string => {
   const { studyName, experimentation, aircraft, date, globalSynthesis } = context;
 
-  // Sort risks by residual risk level (Inacceptable -> Usuel) usually makes sense,
-  // but let's stick to the current list order or updated order as passed.
-  // The Dashboard passes them sorted by updatedAt, but typically reports are sorted by criticality.
-  // For now, we respect the order passed in (which is the view order).
+  // Matrix generation for Word
+  const rows = [4, 3, 2, 1];
+  const cols = ['A', 'B', 'C', 'D'];
 
-  const rows = risks.map(risk => {
+  let matrixHtml = `
+  <table style="border-collapse: collapse; margin: 20px 0; font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px;">
+    <tr>
+      <td rowspan="6" style="writing-mode: vertical-lr; transform: rotate(180deg); text-align: center; vertical-align: middle; font-weight: bold; padding: 10px; color: #64748B;">GRAVITÉ</td>
+      <td></td>
+      <td style="text-align: center; font-weight: bold; color: #64748B; padding: 5px; width: 40px;">A</td>
+      <td style="text-align: center; font-weight: bold; color: #64748B; padding: 5px; width: 40px;">B</td>
+      <td style="text-align: center; font-weight: bold; color: #64748B; padding: 5px; width: 40px;">C</td>
+      <td style="text-align: center; font-weight: bold; color: #64748B; padding: 5px; width: 40px;">D</td>
+    </tr>
+  `;
+
+  rows.forEach(r => {
+    matrixHtml += `<tr><td style="text-align: right; font-weight: bold; padding-right: 10px; color: #64748B;">${r}</td>`;
+    cols.forEach(c => {
+      const level = calculateComputedLevel(r, c);
+      const style = getRiskStyle(level);
+      const count = risks.filter(risk => risk.residualRisk.gravity === r && risk.residualRisk.occurrence === c).length;
+      const opacity = count > 0 ? '1' : '0.3';
+      const textColor = level === RiskLevel.Faible ? '#0F172A' : '#FFFFFF';
+      const displayCount = count > 0 ? `<span style="color: ${textColor}; font-weight: bold; font-size: 12px;">${count}</span>` : '&nbsp;';
+
+      matrixHtml += `<td style="background-color: ${style.bg}; opacity: ${opacity}; text-align: center; vertical-align: middle; height: 40px; border: 1px solid #FFFFFF;">${displayCount}</td>`;
+    });
+    matrixHtml += `</tr>`;
+  });
+
+  matrixHtml += `
+    <tr>
+      <td></td>
+      <td></td>
+      <td colspan="4" style="text-align: center; font-weight: bold; padding-top: 10px; color: #64748B;">OCCURRENCE</td>
+    </tr>
+  </table>
+  `;
+
+  // Risk elements formatting
+  let risksHtml = '';
+  risks.forEach((risk, index) => {
     const level = risk.residualRisk.computedLevel;
     const style = getRiskStyle(level);
 
-    // Formatting mitigation measures: convert newlines to <br>
     const mitigation = risk.mitigationMeasures
-      ? risk.mitigationMeasures.replace(/\n/g, '<br>')
+      ? risk.mitigationMeasures.replace(/\n/g, '<br/>')
       : '<i>Aucune mesure définie</i>';
 
-    return `
-      <tr style="border-bottom: 1px solid #E2E8F0;">
-        <td style="padding: 12px; vertical-align: top; border-bottom: 1px solid #E2E8F0;">
-          <div style="font-weight: bold; font-size: 14px; color: #0F172A; margin-bottom: 4px;">${risk.activityTitle || 'Sans titre'}</div>
-          <div style="font-size: 13px; color: #64748B;">${risk.dreadedEvent || ''}</div>
-        </td>
-        <td style="padding: 12px; vertical-align: top; font-size: 13px; color: #334155; border-bottom: 1px solid #E2E8F0;">
-          ${mitigation}
-        </td>
-        <td style="padding: 12px; vertical-align: top; text-align: center; border-bottom: 1px solid #E2E8F0; width: 120px;">
-          <span style="
-            display: inline-block;
-            padding: 6px 12px;
-            background-color: ${style.bg};
-            color: ${style.text};
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-            border: 1px solid ${style.border};
-            white-space: nowrap;
-          ">
-            ${level}
+    const dreadedEvent = risk.dreadedEvent
+      ? risk.dreadedEvent.replace(/\n/g, '<br/>')
+      : '<i>Non renseigné</i>';
+
+    risksHtml += `
+      <div style="margin-bottom: 20px; page-break-inside: avoid; border: 1px solid #E2E8F0; border-radius: 6px; background-color: #FFFFFF;">
+        <div style="background-color: #F8FAFC; padding: 12px; border-bottom: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="margin: 0; font-size: 14px; color: #0F172A;">${index + 1}. ${risk.activityTitle || 'Sans titre'}</h3>
+          <span style="display: inline-block; padding: 4px 8px; background-color: ${style.bg}; color: ${style.text}; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase;">
+             ${level}
           </span>
-        </td>
-      </tr>
+        </div>
+        <div style="padding: 12px;">
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 10px; font-weight: bold; color: #64748B; text-transform: uppercase; margin-bottom: 4px;">Événement Redouté</div>
+            <div style="font-size: 12px; color: #334155; line-height: 1.4;">${dreadedEvent}</div>
+          </div>
+          <div style="background-color: #F0F9FF; border-left: 4px solid #0EA5E9; padding: 10px;">
+            <div style="font-size: 10px; font-weight: bold; color: #0369A1; text-transform: uppercase; margin-bottom: 4px;">Mesures d'Atténuation</div>
+            <div style="font-size: 12px; color: #0F172A; line-height: 1.4;">${mitigation}</div>
+          </div>
+        </div>
+      </div>
     `;
-  }).join('');
+  });
 
   return `
-    <!DOCTYPE html>
-    <html lang="fr">
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
     <head>
       <meta charset="utf-8">
-      <title>Synthèse des Risques - ${studyName}</title>
+      <title>Rapport GrXP - ${studyName}</title>
+      <!--[if gte mso 9]>
+      <xml>
+        <w:WordDocument>
+          <w:View>Print</w:View>
+          <w:Zoom>100</w:Zoom>
+          <w:DoNotOptimizeForBrowser/>
+        </w:WordDocument>
+      </xml>
+      <![endif]-->
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; color: #0F172A; }
+      </style>
     </head>
-    <body style="font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #0F172A; background-color: #FFFFFF;">
-
-      <!-- Header -->
-      <div style="margin-bottom: 24px; border-bottom: 2px solid #0F172A; padding-bottom: 16px;">
-        <h1 style="font-size: 24px; font-weight: 900; text-transform: uppercase; margin: 0 0 12px 0; color: #0F172A;">
-          Synthèse des Risques
-        </h1>
-        <table style="width: 100%; font-size: 14px; color: #334155;">
-          <tr>
-            <td style="padding-bottom: 4px;"><strong>Étude :</strong> ${studyName}</td>
-            <td style="padding-bottom: 4px;"><strong>Aéronef :</strong> ${aircraft}</td>
-          </tr>
-          <tr>
-            <td style="padding-bottom: 4px;"><strong>Expérimentation :</strong> ${experimentation}</td>
-            <td style="padding-bottom: 4px;"><strong>Date :</strong> ${formatDate(date)}</td>
-          </tr>
-        </table>
-      </div>
-
-      <!-- Main Table -->
-      <table style="width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 24px; border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden;">
-        <thead>
-          <tr style="background-color: #F8FAFC;">
-            <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: bold; text-transform: uppercase; color: #64748B; border-bottom: 2px solid #E2E8F0; width: 35%;">Risque & Description</th>
-            <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: bold; text-transform: uppercase; color: #64748B; border-bottom: 2px solid #E2E8F0;">Mesures d'atténuation</th>
-            <th style="padding: 12px; text-align: center; font-size: 12px; font-weight: bold; text-transform: uppercase; color: #64748B; border-bottom: 2px solid #E2E8F0;">Niveau Résiduel</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
+    <body style="padding: 20px;">
+      
+      <!-- HEADER -->
+      <table style="width: 100%; border-bottom: 2px solid #0F172A; margin-bottom: 20px; padding-bottom: 10px;">
+        <tr>
+          <td colspan="2"><h1 style="font-size: 24px; font-weight: 900; text-transform: uppercase; margin: 0 0 15px 0; color: #0F172A;">Rapport des Risques</h1></td>
+        </tr>
+        <tr>
+          <td style="width: 50%; padding-bottom: 5px;"><span style="font-size: 11px; color: #64748B;">ÉTUDE:</span> <br/><span style="font-size: 13px; font-weight: bold;">${studyName}</span></td>
+          <td style="width: 50%; padding-bottom: 5px;"><span style="font-size: 11px; color: #64748B;">DATE:</span> <br/><span style="font-size: 13px; font-weight: bold;">${formatDate(date)}</span></td>
+        </tr>
+        <tr>
+          <td style="width: 50%;"><span style="font-size: 11px; color: #64748B;">AÉRONEF:</span> <br/><span style="font-size: 13px; font-weight: bold;">${aircraft}</span></td>
+          <td style="width: 50%;"><span style="font-size: 11px; color: #64748B;">EXPÉRIMENTATION:</span> <br/><span style="font-size: 13px; font-weight: bold;">${experimentation}</span></td>
+        </tr>
       </table>
 
-      <!-- Global Synthesis -->
-      <div style="background-color: #F8FAFC; padding: 20px; border-radius: 8px; border: 1px solid #E2E8F0;">
-        <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: bold; text-transform: uppercase; color: #475569;">
-          Conclusion Globale
-        </h3>
-        <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #1E293B;">
-          ${globalSynthesis ? globalSynthesis.replace(/\n/g, '<br>') : 'Aucune conclusion enregistrée.'}
-        </p>
-      </div>
+      <!-- TOP SECTION : MATRIX & CONCLUSION -->
+      <table style="width: 100%; margin-bottom: 30px;">
+        <tr>
+          <td style="width: 45%; vertical-align: top;">
+            <div style="font-size: 14px; font-weight: bold; border-bottom: 1px solid #E2E8F0; padding-bottom: 5px; margin-bottom: 10px;">Matrice de Synthèse</div>
+            ${matrixHtml}
+          </td>
+          <td style="width: 55%; vertical-align: top; padding-left: 20px;">
+            <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 15px; border-radius: 6px;">
+              <h3 style="margin: 0 0 10px 0; font-size: 13px; font-weight: bold; text-transform: uppercase; color: #0F172A; border-bottom: 1px solid #CBD5E1; padding-bottom: 5px;">Conclusion Globale</h3>
+              <div style="font-size: 12px; color: #334155; line-height: 1.5;">
+                ${globalSynthesis ? globalSynthesis.replace(/\n/g, '<br/>') : '<i>Aucune conclusion renseignée.</i>'}
+              </div>
+            </div>
+          </td>
+        </tr>
+      </table>
 
-      <div style="margin-top: 24px; font-size: 11px; color: #94A3B8; text-align: right;">
-        Généré par GrXP le ${new Date().toLocaleDateString('fr-FR')}
+      <br clear="all" style="page-break-before:always" />
+
+      <!-- DETAIL DES RISQUES -->
+      <h2 style="font-size: 18px; font-weight: bold; color: #1E293B; border-bottom: 1px solid #E2E8F0; padding-bottom: 5px; margin-bottom: 20px;">
+        Détail des Risques Résiduels
+      </h2>
+
+      ${risksHtml}
+
+      <!-- FOOTER -->
+      <div style="margin-top: 40px; padding-top: 10px; border-top: 1px solid #E2E8F0; font-size: 10px; color: #94A3B8; text-align: center;">
+        Généré par GrXP le ${new Date().toLocaleDateString('fr-FR')} - ${studyName}
       </div>
 
     </body>
@@ -125,11 +187,7 @@ export const generateHtmlContent = (context: StudyContext, risks: RiskEntry[]): 
 };
 
 export const downloadHtmlBlob = (content: string, filename: string) => {
-  const blob = new Blob([content], { type: 'application/msword' }); // 'application/msword' or 'text/html'
-  // Using 'application/msword' hints the browser/OS to open it with Word,
-  // even though it's HTML. Alternatively, use 'text/html' and let user choose.
-  // The user requested .doc compatibility.
-
+  const blob = new Blob(['\ufeff', content], { type: 'application/msword;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
