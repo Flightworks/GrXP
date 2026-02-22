@@ -579,6 +579,50 @@ export const exportToWord = (risks: RiskEntry[]): Blob => {
     }
   };
 
+  const rowsLegend = [4, 3, 2, 1] as Gravity[];
+  const colsLegend = ['A', 'B', 'C', 'D'] as Occurrence[];
+
+  let matrixHTML = `
+    <table style="border-collapse: separate; border-spacing: 4px; margin-bottom: 20px; font-family: Arial, sans-serif; width: auto; margin-left: auto; margin-right: auto;">
+      <tr>
+        <td style="border: none; width: 40px;"></td>
+        ${colsLegend.map(c => `<td style="border: none; text-align: center; font-weight: bold; color: #64748b; width: 40px;">${c}</td>`).join('')}
+      </tr>
+  `;
+
+  rowsLegend.forEach(row => {
+    matrixHTML += `
+      <tr>
+        <td style="border: none; text-align: right; padding-right: 8px; font-weight: bold; color: #64748b;">${row}</td>
+    `;
+    colsLegend.forEach(col => {
+      const level = calculateRiskLevel(row, col);
+      const count = risks.filter(r => r.residualRisk.gravity === row && r.residualRisk.occurrence === col).length;
+      const { bg, text } = getRiskColor(level);
+      // Word document styling tricks -> text color mapping based on level (yellow needs dark text)
+      const isWeak = level === RiskLevel.Faible;
+      const textColor = isWeak ? '#0F172A' : '#FFFFFF';
+
+      const opacityStyle = count === 0 ? 'filter: alpha(opacity=30); opacity: 0.3;' : 'opacity: 1;';
+      const countLabel = count > 0 ? count : '';
+
+      matrixHTML += `
+        <td style="background-color: ${bg}; color: ${textColor}; text-align: center; vertical-align: middle; height: 40px; width: 40px; border-radius: 4px; font-weight: bold; font-size: 14px; ${opacityStyle}">
+          ${countLabel}
+        </td>
+      `;
+    });
+    matrixHTML += `</tr>`;
+  });
+
+  matrixHTML += `
+    </table>
+    <div style="font-family: Arial, sans-serif; font-size: 10px; color: #64748b; text-align: center; margin-bottom: 30px;">
+      <b>Gravité :</b> 4 (Catastrophique), 3 (Critique), 2 (Modérée), 1 (Négligeable)<br/>
+      <b>Occurrence :</b> A (Très Improbable), B (Rare), C (Occasionnel), D (Fréquent)
+    </div>
+  `;
+
   const rows = risks.map(risk => {
     const level = risk.residualRisk.computedLevel;
     const { bg, text } = getRiskColor(level);
@@ -624,6 +668,11 @@ export const exportToWord = (risks: RiskEntry[]): Blob => {
     </head>
     <body>
       <h2 style="font-family: Arial, sans-serif; color: #0f172a; border-bottom: 2px solid #0f172a; padding-bottom: 10px;">Synthèse des Risques (GRE)</h2>
+      
+      <h3 style="font-family: Arial, sans-serif; color: #1e293b; margin-top: 20px; margin-bottom: 10px; font-size: 14pt;">Matrice des Risques Résiduels</h3>
+      ${matrixHTML}
+
+      <h3 style="font-family: Arial, sans-serif; color: #1e293b; margin-top: 20px; font-size: 14pt;">Détails (Total: ${risks.length})</h3>
       <table>
         <thead>
           <tr style="background-color: #f1f5f9;">
