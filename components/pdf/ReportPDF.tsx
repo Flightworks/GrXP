@@ -1,6 +1,7 @@
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
-import { RiskEntry, StudyContext } from '../../../types';
+import { RiskEntry, StudyContext, Gravity, Occurrence, Exposition, Detectability } from '../../types';
+import { GRAVITY_OPTIONS, OCCURRENCE_OPTIONS, EXPOSITION_OPTIONS, DETECTABILITY_OPTIONS } from '../../constants';
 
 // Optional: Register custom fonts if needed
 // Font.register({ family: 'Inter', src: '...' });
@@ -132,6 +133,12 @@ interface ReportPDFProps {
     context: StudyContext;
 }
 
+
+const getGravityLabel = (val: Gravity) => GRAVITY_OPTIONS.find(o => o.value === val)?.label || val;
+const getOccurrenceLabel = (val: Occurrence) => OCCURRENCE_OPTIONS.find(o => o.value === val)?.label || val;
+const getExpositionLabel = (val: Exposition) => EXPOSITION_OPTIONS.find(o => o.value === val)?.label || val;
+const getDetectabilityLabel = (val: Detectability) => DETECTABILITY_OPTIONS.find(o => o.value === val)?.label || val;
+
 export const ReportPDF: React.FC<ReportPDFProps> = ({ risks, context }) => {
     return (
         <Document>
@@ -182,9 +189,29 @@ export const ReportPDF: React.FC<ReportPDFProps> = ({ risks, context }) => {
                             <Text style={styles.value}>{risk.mitigationMeasures || "Non renseignées"}</Text>
 
                             <Text style={styles.label}>Évaluation Résiduelle</Text>
-                            <Text style={styles.value}>
-                                Gravité: {risk.residualRisk.gravity} | Occurrence: {risk.residualRisk.occurrence}
-                            </Text>
+                            <View style={{ flexDirection: 'row', gap: 10 }}>
+                                <Text style={styles.value}>
+                                    Gravité: {getGravityLabel(risk.residualRisk.gravity)}
+                                </Text>
+                                <Text style={styles.value}>
+                                    Occurrence: {getOccurrenceLabel(risk.residualRisk.occurrence)}
+                                </Text>
+                            </View>
+
+                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.label}>Exposition</Text>
+                                    <Text style={styles.value}>
+                                        {getExpositionLabel(risk.initialRisk.exposition)} (Init) → {getExpositionLabel(risk.residualRisk.exposition)} (Res)
+                                    </Text>
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.label}>Détectabilité</Text>
+                                    <Text style={styles.value}>
+                                        {getDetectabilityLabel(risk.initialRisk.detectability)} (Init) → {getDetectabilityLabel(risk.residualRisk.detectability)} (Res)
+                                    </Text>
+                                </View>
+                            </View>
 
                             {risk.synthesis && (
                                 <>

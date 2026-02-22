@@ -1,7 +1,7 @@
 {
   "name": "grxp---gestion-des-risques-essais/xp",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "license": "MIT",
   "type": "module",
   "scripts": {
