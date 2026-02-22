@@ -1,5 +1,7 @@
 import { RiskEntry, Occurrence, Gravity, Exposition, Detectability, RiskLevel, RiskCatalogEntry, StudyContext, Study } from "../types";
 import { DEFAULT_CATALOG, calculateRiskLevel } from "../constants";
+import { StudyArraySchema, StudySchema, RiskEntrySchema } from "../schema";
+import { z } from "zod";
 
 const DB_KEY = 'grxp_db_v1';
 const ACTIVE_STUDY_KEY = 'grxp_active_study_id_v1';
@@ -389,26 +391,33 @@ export const exportRisksToJSON = (): string => {
 
 export const importRisksFromJSON = (jsonContent: string): void => {
   try {
-    const data = JSON.parse(jsonContent);
-    if (!Array.isArray(data)) throw new Error("Format invalide");
+    const rawData = JSON.parse(jsonContent);
+    if (!Array.isArray(rawData)) throw new Error("Le format JSON doit être un tableau.");
 
-    // Check for legacy single study export
-    if (data.length > 0 && 'initialRisk' in data[0] && !('risks' in data[0])) {
+    // Check for legacy single study export (array of RiskEntry)
+    if (rawData.length > 0 && 'initialRisk' in rawData[0] && !('risks' in rawData[0])) {
+      const risks = z.array(RiskEntrySchema).parse(rawData) as unknown as RiskEntry[];
       const newStudy = createNewStudy("Etude Importée (Legacy)", "");
       updateCurrentStudy(s => {
-        s.risks = data as RiskEntry[];
+        s.risks = risks;
       });
       return;
     }
 
     // Assume Study[]
-    saveDB(data);
-    if (data.length > 0) {
-      setActiveStudyId(data[0].id);
+    const validatedData = StudyArraySchema.parse(rawData) as unknown as Study[];
+    saveDB(validatedData);
+    if (validatedData.length > 0) {
+      setActiveStudyId(validatedData[0].id);
     }
   } catch (e) {
+    if (e instanceof z.ZodError) {
+      const zodErrors = (e as any).errors as any[];
+      console.error("Zod Validation Failed:", zodErrors);
+      throw new Error(`Structure des données invalide : ${zodErrors.map(err => err.message).join(', ')}`);
+    }
     console.error("Failed to import JSON", e);
-    throw e;
+    throw new Error("Impossible de lire le fichier JSON.");
   }
 };
 
@@ -545,8 +554,18 @@ export const importRisksFromCSV = (csvContent: string): void => {
     };
   });
 
-  saveDB(newDB);
-  if (newDB.length > 0) setActiveStudyId(newDB[0].id);
+  try {
+    const validatedDB = StudyArraySchema.parse(newDB) as unknown as Study[];
+    saveDB(validatedDB);
+    if (validatedDB.length > 0) setActiveStudyId(validatedDB[0].id);
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      const zodErrors = (e as any).errors as any[];
+      console.error("CSV Validation Failed (Zod):", zodErrors);
+      throw new Error(`Données invalides dans le CSV : vérifiez le format de chaque colonne.`);
+    }
+    throw e;
+  }
 };
 
 export const exportToWord = (risks: RiskEntry[]): Blob => {

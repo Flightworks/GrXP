@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { Plane, BookOpen, Home, PlusCircle, Download, LayoutDashboard, Database, FolderOpen } from 'lucide-react';
+import { Plane, BookOpen, Home, PlusCircle, Download, LayoutDashboard, Database, FolderOpen, Sun, Moon } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import RiskForm from './pages/RiskForm';
 import { CatalogManager } from './pages/CatalogManager';
@@ -10,6 +10,7 @@ import DataPage from './pages/DataPage';
 import PageTransition from './components/PageTransition';
 import Footer from './components/Footer';
 import { usePWAInstall } from './hooks/usePWAInstall';
+import { useTheme } from './src/contexts/ThemeContext';
 
 // Wrapper to extract params for RiskForm
 const RiskFormWrapper: React.FC<{ onNavigate: (page: string, id?: string) => void }> = ({ onNavigate }) => {
@@ -21,6 +22,7 @@ const App: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isInstallable, promptInstall } = usePWAInstall();
+  const { theme, setTheme, isDark } = useTheme();
 
   // Adapter function to maintain compatibility with existing components
   const handleNavigate = (page: string, id?: string) => {
@@ -53,9 +55,9 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-24 md:pb-0 font-sans text-slate-900">
+    <div className="min-h-screen pb-24 md:pb-0 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* Desktop Navigation */}
-      <nav className="hidden md:block bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 no-print">
+      <nav className="hidden md:block bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 no-print transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div
@@ -65,9 +67,9 @@ const App: React.FC = () => {
               <img
                 src={`${import.meta.env.BASE_URL}icon.png`}
                 alt="GrXP Logo"
-                className="w-9 h-9 rounded-xl shadow-lg shadow-slate-200 group-hover:scale-105 transition-transform"
+                className="w-9 h-9 rounded-xl shadow-lg shadow-slate-200 dark:shadow-none group-hover:scale-105 transition-transform"
               />
-              <span className="font-bold text-xl tracking-tight text-slate-800">GrXP</span>
+              <span className="font-bold text-xl tracking-tight text-slate-800 dark:text-white transition-colors">GrXP</span>
             </div>
             <div className="flex items-center space-x-2">
               <button
@@ -111,8 +113,16 @@ const App: React.FC = () => {
               )}
 
               <button
+                onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                className="p-2 mr-2 rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
+                title="Basculer le thème"
+              >
+                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+
+              <button
                 onClick={() => handleNavigate('edit')}
-                className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-full shadow-lg shadow-slate-200 text-sm font-medium transition-all transform hover:-translate-y-0.5"
+                className="flex items-center gap-2 bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white px-5 py-2 rounded-full shadow-lg shadow-slate-200 dark:shadow-blue-900/20 text-sm font-medium transition-all transform hover:-translate-y-0.5"
               >
                 <PlusCircle className="w-4 h-4" />
                 Nouveau
@@ -125,6 +135,7 @@ const App: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
         <AnimatePresence mode="wait">
+          {/* @ts-ignore Key is required for framer-motion AnimatePresence */}
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={
               <PageTransition>
@@ -161,7 +172,7 @@ const App: React.FC = () => {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 px-2 py-2 z-50 pb-safe no-print">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 px-2 py-2 z-50 pb-safe no-print transition-colors duration-200">
         <div className="flex justify-between items-center px-2">
           <button
             onClick={() => handleNavigate('dashboard')}
