@@ -582,7 +582,8 @@ export const exportToWord = (risks: RiskEntry[]): Blob => {
   const rowsLegend = [4, 3, 2, 1] as Gravity[];
   const colsLegend = ['A', 'B', 'C', 'D'] as Occurrence[];
 
-  let matrixHTML = `
+  const renderMatrix = (specificRisk?: RiskEntry) => {
+    let matrixHTML = `
     <table style="border-collapse: separate; border-spacing: 4px; margin-bottom: 20px; font-family: Arial, sans-serif; width: auto; margin-left: auto; margin-right: auto;">
       <tr>
         <td style="border: none; width: 40px;"></td>
@@ -590,69 +591,87 @@ export const exportToWord = (risks: RiskEntry[]): Blob => {
       </tr>
   `;
 
-  rowsLegend.forEach(row => {
-    matrixHTML += `
+    rowsLegend.forEach(row => {
+      matrixHTML += `
       <tr>
         <td style="border: none; text-align: right; padding-right: 8px; font-weight: bold; color: #64748b;">${row}</td>
     `;
-    colsLegend.forEach(col => {
-      const level = calculateRiskLevel(row, col);
-      const count = risks.filter(r => r.residualRisk.gravity === row && r.residualRisk.occurrence === col).length;
-      const { bg, text } = getRiskColor(level);
-      // Word document styling tricks -> text color mapping based on level (yellow needs dark text)
-      const isWeak = level === RiskLevel.Faible;
-      const textColor = isWeak ? '#0F172A' : '#FFFFFF';
+      colsLegend.forEach(col => {
+        const level = calculateRiskLevel(row, col);
+        const { bg } = getRiskColor(level);
+        const isWeak = level === RiskLevel.Faible;
+        const textColor = isWeak ? '#0F172A' : '#FFFFFF';
 
-      const opacityStyle = count === 0 ? 'filter: alpha(opacity=30); opacity: 0.3;' : 'opacity: 1;';
-      const countLabel = count > 0 ? count : '';
+        let opacityStyle = 'filter: alpha(opacity=30); opacity: 0.3;';
+        let content = '';
 
-      matrixHTML += `
-        <td style="background-color: ${bg}; color: ${textColor}; text-align: center; vertical-align: middle; height: 40px; width: 40px; border-radius: 4px; font-weight: bold; font-size: 14px; ${opacityStyle}">
-          ${countLabel}
-        </td>
+        if (specificRisk) {
+          const isInit = specificRisk.initialRisk.gravity === row && specificRisk.initialRisk.occurrence === col;
+          const isRes = specificRisk.residualRisk.gravity === row && specificRisk.residualRisk.occurrence === col;
+          if (isInit && isRes) { content = 'I / R'; opacityStyle = 'opacity: 1;'; }
+          else if (isInit) { content = 'I'; opacityStyle = 'opacity: 1;'; }
+          else if (isRes) { content = 'R'; opacityStyle = 'opacity: 1;'; }
+        } else {
+          const count = risks.filter(r => r.residualRisk.gravity === row && r.residualRisk.occurrence === col).length;
+          if (count > 0) {
+            content = count.toString();
+            opacityStyle = 'opacity: 1;';
+          }
+        }
+
+        matrixHTML += `
+          <td style="background-color: ${bg}; color: ${textColor}; text-align: center; vertical-align: middle; height: 40px; width: 40px; border-radius: 4px; font-weight: bold; font-size: 14px; ${opacityStyle}">
+            ${content}
+          </td>
       `;
+      });
+      matrixHTML += `</tr>`;
     });
-    matrixHTML += `</tr>`;
-  });
 
-  matrixHTML += `
+    matrixHTML += `
     </table>
     <div style="font-family: Arial, sans-serif; font-size: 10px; color: #64748b; text-align: center; margin-bottom: 30px;">
       <b>Gravité :</b> 4 (Catastrophique), 3 (Critique), 2 (Modérée), 1 (Négligeable)<br/>
       <b>Occurrence :</b> A (Très Improbable), B (Rare), C (Occasionnel), D (Fréquent)
     </div>
   `;
+    return matrixHTML;
+  };
 
-  const rows = risks.map(risk => {
+  const globalMatrixHTML = renderMatrix();
+
+  const riskPages = risks.map((risk, index) => {
     const level = risk.residualRisk.computedLevel;
     const { bg, text } = getRiskColor(level);
     const mitigation = risk.mitigationMeasures ? risk.mitigationMeasures.replace(/\n/g, '<br/>') : '';
+    const transitionMatrixHTML = renderMatrix(risk);
 
     return `
-      <tr style="border: 1px solid black;">
-        <td style="padding: 8px; vertical-align: top; border: 1px solid black; width: 30%;">
-          <div style="font-weight: bold; font-family: Arial, sans-serif; margin-bottom: 4px; color: #1e293b;">${risk.activityTitle}</div>
-          <div style="font-family: Arial, sans-serif; color: #475569; font-size: 0.9em;">${risk.dreadedEvent}</div>
-        </td>
-        <td style="padding: 8px; vertical-align: top; border: 1px solid black; font-family: Arial, sans-serif; width: 50%; color: #334155;">
-          ${mitigation}
-        </td>
-        <td style="padding: 8px; vertical-align: top; border: 1px solid black; width: 20%; text-align: center;">
-          <div style="
-            background-color: ${bg};
-            color: ${text};
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-family: Arial, sans-serif;
-            display: inline-block;
-            font-size: 0.8em;
-          ">
+      <br clear="all" style="page-break-before:always" />
+      <h3 style="font-family: Arial, sans-serif; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 30px;">Fiche Risque : ${index + 1} / ${risks.length}</h3>
+      
+      <table style="border-collapse: collapse; width: 100%; margin-bottom: 20px; font-family: Arial, sans-serif;">
+        <tr>
+          <td style="padding: 12px; background-color: #f8fafc; border: 1px solid #e2e8f0; width: 70%;">
+            <strong style="color: #0f172a; font-size: 14pt;">${risk.activityTitle}</strong>
+          </td>
+          <td style="padding: 12px; background-color: ${bg}; color: ${text}; border: 1px solid #e2e8f0; text-align: center; width: 30%; font-weight: bold; font-size: 12pt;">
             ${level}
-          </div>
-        </td>
-      </tr>
+          </td>
+        </tr>
+      </table>
+
+      <h4 style="font-family: Arial, sans-serif; color: #64748b; margin-bottom: 4px; font-size: 10pt; text-transform: uppercase;">Événement Redouté</h4>
+      <p style="font-family: Arial, sans-serif; color: #334155; margin-top: 0; margin-bottom: 15px;">${risk.dreadedEvent || "Non renseigné"}</p>
+
+      <h4 style="font-family: Arial, sans-serif; color: #64748b; margin-bottom: 4px; font-size: 10pt; text-transform: uppercase;">Mesures d'Atténuation</h4>
+      <p style="font-family: Arial, sans-serif; color: #334155; margin-top: 0; margin-bottom: 15px;">${mitigation || "Non renseignées"}</p>
+
+      <h4 style="font-family: Arial, sans-serif; color: #64748b; margin-bottom: 4px; font-size: 10pt; text-transform: uppercase;">Synthèse</h4>
+      <p style="font-family: Arial, sans-serif; color: #334155; margin-top: 0; margin-bottom: 25px;">${risk.synthesis || "Non renseignée"}</p>
+
+      <h4 style="font-family: Arial, sans-serif; color: #1e293b; margin-bottom: 10px; font-size: 12pt; text-align: center;">Matrice de Transition (I = Initial, R = Résiduel)</h4>
+      ${transitionMatrixHTML}
     `;
   }).join('');
 
@@ -669,22 +688,14 @@ export const exportToWord = (risks: RiskEntry[]): Blob => {
     <body>
       <h2 style="font-family: Arial, sans-serif; color: #0f172a; border-bottom: 2px solid #0f172a; padding-bottom: 10px;">Synthèse des Risques (GRE)</h2>
       
-      <h3 style="font-family: Arial, sans-serif; color: #1e293b; margin-top: 20px; margin-bottom: 10px; font-size: 14pt;">Matrice des Risques Résiduels</h3>
-      ${matrixHTML}
+      <p style="font-family: Arial, sans-serif; color: #64748b; font-size: 10pt; margin-bottom: 30px;">
+        Détail et transition de chaque risque sur les pages suivantes.
+      </p>
 
-      <h3 style="font-family: Arial, sans-serif; color: #1e293b; margin-top: 20px; font-size: 14pt;">Détails (Total: ${risks.length})</h3>
-      <table>
-        <thead>
-          <tr style="background-color: #f1f5f9;">
-            <th style="border: 1px solid black; padding: 8px; text-align: left; font-family: Arial, sans-serif; color: #334155; font-weight: bold;">Risque / Événement Redouté</th>
-            <th style="border: 1px solid black; padding: 8px; text-align: left; font-family: Arial, sans-serif; color: #334155; font-weight: bold;">Mesures d'Atténuation (MA)</th>
-            <th style="border: 1px solid black; padding: 8px; text-align: center; font-family: Arial, sans-serif; color: #334155; font-weight: bold;">Risque Résiduel (RR)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
+      <h3 style="font-family: Arial, sans-serif; color: #1e293b; margin-top: 20px; margin-bottom: 10px; font-size: 14pt; text-align: center;">Matrice Globale des Risques Résiduels</h3>
+      ${globalMatrixHTML}
+
+      ${riskPages}
     </body>
     </html>
   `;

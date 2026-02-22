@@ -307,6 +307,71 @@ const VisualMatrix: React.FC<{ risks: RiskEntry[] }> = ({ risks }) => {
     );
 };
 
+const RiskTransitionMatrix: React.FC<{ risk: RiskEntry }> = ({ risk }) => {
+    const rows = [4, 3, 2, 1] as Gravity[];
+    const cols = ['A', 'B', 'C', 'D'] as Occurrence[];
+
+    const initG = risk.initialRisk.gravity;
+    const initO = risk.initialRisk.occurrence;
+    const resG = risk.residualRisk.gravity;
+    const resO = risk.residualRisk.occurrence;
+
+    return (
+        <View style={styles.matrixSection}>
+            <View style={styles.matrixContainer}>
+                <View style={styles.matrixYAxis}>
+                    <Text style={styles.matrixYLabel}>Gravité</Text>
+                </View>
+
+                <View style={styles.matrixGrid}>
+                    <View style={styles.matrixXHeaderRow}>
+                        {cols.map(c => <Text key={c} style={styles.matrixXLabel}>{c}</Text>)}
+                    </View>
+
+                    {rows.map(row => (
+                        <View key={row} style={styles.matrixRow}>
+                            <Text style={styles.matrixRowLabel}>{row}</Text>
+                            {cols.map(col => {
+                                const level = calculateRiskLevel(row, col);
+                                const isInit = initG === row && initO === col;
+                                const isRes = resG === row && resO === col;
+
+                                const bgColor = getLevelColor(level);
+                                const opacity = (isInit || isRes) ? 1 : 0.2;
+                                const textColorStyle = level === 'Faible' ? styles.matrixCellTextDark : styles.matrixCellText;
+
+                                let content = '';
+                                if (isInit && isRes) content = 'I / R';
+                                else if (isInit) content = 'I';
+                                else if (isRes) content = 'R';
+
+                                return (
+                                    <View key={`${row}-${col}`} style={[styles.matrixCell, { backgroundColor: bgColor, opacity }]}>
+                                        {content ? <Text style={textColorStyle}>{content}</Text> : null}
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    ))}
+
+                    <View style={styles.matrixXFooter}>
+                        <Text style={styles.matrixXFooterLabel}>Occurrence</Text>
+                    </View>
+                </View>
+            </View>
+
+            <View style={styles.legendContainer}>
+                <View style={styles.legendItem}>
+                    <Text style={styles.legendLabel}>I = Risque Initial</Text>
+                </View>
+                <View style={styles.legendItem}>
+                    <Text style={styles.legendLabel}>R = Risque Résiduel</Text>
+                </View>
+            </View>
+        </View>
+    );
+};
+
 export const ReportPDF: React.FC<ReportPDFProps> = ({ risks, context }) => {
     return (
         <Document>
@@ -334,19 +399,35 @@ export const ReportPDF: React.FC<ReportPDFProps> = ({ risks, context }) => {
 
                 <VisualMatrix risks={risks} />
 
-                <Text style={styles.sectionTitle}>Détail des Risques ({risks.length})</Text>
+                <Text style={{ textAlign: 'center', color: '#64748b', fontSize: 10, marginTop: 30 }}>
+                    Les pages suivantes détaillent individuellement chaque risque de l'étude.
+                </Text>
 
-                {/* Risks List - wrap={false} prevents breaking a single risk across two pages */}
-                {risks.map((risk, index) => {
-                    const resLevel = risk.residualRisk.computedLevel;
-                    const levelColor = getLevelColor(resLevel);
-                    const textColor = getTextColorForBg(resLevel);
+                <Text style={styles.footer} fixed>
+                    Généré par GrXP - {new Date().toLocaleDateString()}
+                </Text>
+                <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => (
+                    `${pageNumber} / ${totalPages}`
+                )} fixed />
+            </Page>
 
-                    return (
-                        <View key={risk.id} style={styles.riskCard} wrap={false}>
+            {risks.map((risk, index) => {
+                const resLevel = risk.residualRisk.computedLevel;
+                const levelColor = getLevelColor(resLevel);
+                const textColor = getTextColorForBg(resLevel);
 
+                return (
+                    <Page key={risk.id} size="A4" style={styles.page}>
+                        <View style={styles.header}>
+                            <Text style={styles.title}>Fiche Risque : {index + 1} / {risks.length}</Text>
+                            <View style={styles.contextRow}>
+                                <Text style={styles.contextLabel}>Activité: <Text style={styles.contextValue}>{risk.activityTitle}</Text></Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.riskCard}>
                             <View style={styles.riskHeaderRow}>
-                                <Text style={styles.riskTitle}>{index + 1}. {risk.activityTitle}</Text>
+                                <Text style={styles.riskTitle}>{risk.activityTitle}</Text>
                                 <Text style={[styles.riskLevelBadge, { backgroundColor: levelColor, color: textColor }]}>
                                     {resLevel}
                                 </Text>
@@ -358,50 +439,43 @@ export const ReportPDF: React.FC<ReportPDFProps> = ({ risks, context }) => {
                             <Text style={styles.label}>Mesures d'Atténuation</Text>
                             <Text style={styles.value}>{risk.mitigationMeasures || "Non renseignées"}</Text>
 
-                            <Text style={styles.label}>Évaluation Résiduelle</Text>
-                            <View style={{ flexDirection: 'row', gap: 10 }}>
-                                <Text style={styles.value}>
-                                    Gravité: {getGravityLabel(risk.residualRisk.gravity)}
-                                </Text>
-                                <Text style={styles.value}>
-                                    Occurrence: {getOccurrenceLabel(risk.residualRisk.occurrence)}
-                                </Text>
-                            </View>
-
-                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.label}>Exposition</Text>
-                                    <Text style={styles.value}>
-                                        {getExpositionLabel(risk.initialRisk.exposition)} (Init) → {getExpositionLabel(risk.residualRisk.exposition)} (Res)
-                                    </Text>
+                            <View style={{ flexDirection: 'row', marginTop: 15 }}>
+                                <View style={{ flex: 1, paddingRight: 10 }}>
+                                    <Text style={styles.label}>Évaluation Initiale</Text>
+                                    <Text style={styles.value}>Gravité: {getGravityLabel(risk.initialRisk.gravity)}</Text>
+                                    <Text style={styles.value}>Occurrence: {getOccurrenceLabel(risk.initialRisk.occurrence)}</Text>
+                                    <Text style={{ ...styles.value, marginTop: 4 }}>Exposition: {getExpositionLabel(risk.initialRisk.exposition)}</Text>
+                                    <Text style={styles.value}>Détect: {getDetectabilityLabel(risk.initialRisk.detectability)}</Text>
                                 </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.label}>Détectabilité</Text>
-                                    <Text style={styles.value}>
-                                        {getDetectabilityLabel(risk.initialRisk.detectability)} (Init) → {getDetectabilityLabel(risk.residualRisk.detectability)} (Res)
-                                    </Text>
+                                <View style={{ flex: 1, paddingLeft: 10, borderLeftWidth: 1, borderLeftColor: '#e2e8f0' }}>
+                                    <Text style={styles.label}>Évaluation Résiduelle</Text>
+                                    <Text style={styles.value}>Gravité: {getGravityLabel(risk.residualRisk.gravity)}</Text>
+                                    <Text style={styles.value}>Occurrence: {getOccurrenceLabel(risk.residualRisk.occurrence)}</Text>
+                                    <Text style={{ ...styles.value, marginTop: 4 }}>Exposition: {getExpositionLabel(risk.residualRisk.exposition)}</Text>
+                                    <Text style={styles.value}>Détect: {getDetectabilityLabel(risk.residualRisk.detectability)}</Text>
                                 </View>
                             </View>
 
                             {risk.synthesis && (
-                                <>
+                                <View style={{ marginTop: 15 }}>
                                     <Text style={styles.label}>Synthèse du risque</Text>
                                     <Text style={styles.value}>{risk.synthesis}</Text>
-                                </>
+                                </View>
                             )}
                         </View>
-                    );
-                })}
 
-                {/* Footer */}
-                <Text style={styles.footer} fixed>
-                    Généré par GrXP - {new Date().toLocaleDateString()}
-                </Text>
-                <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => (
-                    `${pageNumber} / ${totalPages}`
-                )} fixed />
+                        <Text style={styles.sectionTitle}>Matrice de Transition (Initial → Résiduel)</Text>
+                        <RiskTransitionMatrix risk={risk} />
 
-            </Page>
+                        <Text style={styles.footer} fixed>
+                            Généré par GrXP - {new Date().toLocaleDateString()}
+                        </Text>
+                        <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => (
+                            `${pageNumber} / ${totalPages}`
+                        )} fixed />
+                    </Page>
+                );
+            })}
         </Document>
     );
 };
