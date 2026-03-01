@@ -47,7 +47,7 @@ describe('htmlExport', () => {
     // Check for risk data
     expect(html).toContain('Risk 1');
     expect(html).toContain('Dreaded Event 1');
-    expect(html).toContain('Measure 1<br>Measure 2'); // Check newline replacement
+    expect(html).toContain('Measure 1<br/>Measure 2'); // Check newline replacement
 
     // Check for specific styles (Faible = yellow-300 = #FDE047)
     expect(html).toContain('#FDE047');

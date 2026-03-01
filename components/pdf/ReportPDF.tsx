@@ -444,7 +444,7 @@ export const ReportPDF: React.FC<ReportPDFProps> = ({ risks, context }) => {
                         <View style={styles.header}>
                             <Text style={styles.title}>Fiche Risque : {index + 1} / {risks.length}</Text>
                             <View style={styles.contextRow}>
-                                <Text style={styles.contextLabel}>Activité: <Text style={styles.contextValue}>{risk.activityTitle}</Text></Text>
+                                <Text style={styles.contextLabel}>Risque: <Text style={styles.contextValue}>{risk.activityTitle}</Text></Text>
                             </View>
                         </View>
 

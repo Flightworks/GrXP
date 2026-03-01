@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Download, Upload, Printer, Copy, AlertTriangle, FileText, Save, ArrowLeft } from 'lucide-react';
 import { RiskEntry } from '../types';
-import { getStudyContext, exportRisksToCSV, exportRisksToJSON, importRisksFromCSV, importRisksFromJSON, getRisks, exportToWord } from '../services/storage';
+import { getStudyContext, getRisks } from '../services/storage';
 import { PDFDownloadLink, PDFViewer } from '@react-pdf/renderer';
+import { useDataExport } from '../hooks/useDataExport';
 import { ReportPDF } from '../components/pdf/ReportPDF';
 import { SynthesisPDF } from '../components/pdf/SynthesisPDF';
 
@@ -12,114 +13,17 @@ interface DataPageProps {
 
 const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
     const context = getStudyContext();
-    const [risks, setRisks] = useState<RiskEntry[]>(getRisks());
-    const [previewType, setPreviewType] = useState<'synth' | 'full' | 'word' | null>(null);
-
-    // --- Download Logic ---
-    const triggerDownload = (blob: Blob, filename: string) => {
-        try {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            link.target = '_blank';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            setTimeout(() => {
-                URL.revokeObjectURL(url);
-            }, 60000);
-        } catch (error) {
-            console.error("Download failed:", error);
-            alert("Erreur lors du téléchargement.");
-        }
-    };
-
-    const downloadFile = (content: string, prefix: string, extension: string, mimeType: string) => {
-        let safeName = (context.studyName || 'Etude').trim();
-        safeName = safeName.replace(/[^a-z0-9\-_]/gi, '_').replace(/_+/g, '_');
-        if (!safeName || safeName.length === 0) safeName = 'Etude_Sans_Nom';
-
-        const filename = `${prefix}_${safeName}.${extension}`;
-        const blobContent = extension === 'csv' ? ['\uFEFF' + content] : [content];
-        const blob = new Blob(blobContent, { type: `${mimeType};charset=utf-8` });
-        triggerDownload(blob, filename);
-    };
-
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        if (!confirm("ATTENTION : Cette action va effacer TOUTES les études existantes pour les remplacer par celles du fichier.\n\nÊtes-vous sûr de vouloir continuer ?")) {
-            event.target.value = '';
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const content = e.target?.result as string;
-            try {
-                if (file.name.toLowerCase().endsWith('.json')) {
-                    importRisksFromJSON(content);
-                    setRisks(getRisks());
-                    alert('Base de données restaurée avec succès (JSON).');
-                } else if (file.name.toLowerCase().endsWith('.csv')) {
-                    importRisksFromCSV(content);
-                    setRisks(getRisks());
-                    alert('Études importées avec succès (CSV).');
-                } else {
-                    alert('Format de fichier non supporté. Utilisez .csv ou .json');
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Erreur lors de l\'importation : ' + (error as Error).message);
-            }
-        };
-        reader.readAsText(file);
-        event.target.value = '';
-    };
-
-    const handleCopySynthesis = () => {
-        let text = `# Synthèse GRXP : ${context.studyName}\n\n`;
-        text += `- **Expérimentation :** ${context.experimentation}\n`;
-        text += `- **Aéronef :** ${context.aircraft}\n`;
-        text += `- **Date :** ${new Date().toLocaleDateString()}\n\n`;
-        text += `--- \n\n`;
-        text += `## Synthèse Globale\n${context.globalSynthesis || "_Aucune synthèse renseignée_"}\n\n`;
-        text += `## Détail des Risques Résiduels\n`;
-
-        const grouped: Record<string, RiskEntry[]> = {};
-        risks.forEach(r => {
-            const exp = r.experimentation || 'Général';
-            if (!grouped[exp]) grouped[exp] = [];
-            grouped[exp].push(r);
-        });
-
-        Object.keys(grouped).forEach(exp => {
-            text += `\n### Expérimentation : ${exp}\n\n`;
-            text += `| Activité | Niveau | G | O | Mesures de Mitigation |\n`;
-            text += `| :--- | :--- | :---: | :---: | :--- |\n`;
-            grouped[exp].forEach(r => {
-                const levelStr = r.residualRisk.computedLevel.toUpperCase();
-                const safeTitle = r.activityTitle.replace(/\|/g, '\\|');
-                const safeMeasures = r.mitigationMeasures.replace(/\|/g, '\\|').replace(/\n/g, '<br>');
-
-                text += `| ${safeTitle} | **${levelStr}** | ${r.residualRisk.gravity} | ${r.residualRisk.occurrence} | ${safeMeasures} |\n`;
-            });
-        });
-
-        navigator.clipboard.writeText(text).then(() => alert('Synthèse Markdown copiée dans le presse-papier'));
-    };
-
-    const handleWordExport = () => {
-        const blob = exportToWord(risks);
-        let safeName = (context.studyName || 'Etude').trim();
-        safeName = safeName.replace(/[^a-z0-9\-_]/gi, '_').replace(/_+/g, '_');
-        if (!safeName) safeName = 'Etude_Sans_Nom';
-
-        triggerDownload(blob, `GRE_Synthese_${safeName}.doc`);
-        triggerDownload(blob, `GRE_Synthese_${safeName}.doc`);
-    };
+    const {
+        risks,
+        previewType,
+        setPreviewType,
+        handleFileUpload,
+        handleCopySynthesis,
+        handleWordSynthesisExport,
+        handleWordReportExport,
+        handleDownloadCSV,
+        handleDownloadJSON
+    } = useDataExport(context, getRisks());
 
     if (previewType === 'synth') {
         return (
@@ -143,17 +47,7 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
         );
     }
 
-    if (previewType === 'word') {
-        // Quick hack: extract word HTML to display in iframe
-        const blob = exportToWord(risks);
-        const url = URL.createObjectURL(blob);
-        return (
-            <div className="absolute inset-0 bg-white z-50 flex flex-col">
-                <button onClick={() => setPreviewType(null)} className="p-4 bg-slate-800 text-white font-bold">Fermer l'aperçu Word (HTML) -&gt; N'oubliez pas les couleurs de fond !</button>
-                <iframe src={url} width="100%" height="100%" className="bg-white" />
-            </div>
-        );
-    }
+    // Word preview logic removed as it's a real docx blob now, impossible to render raw HTML iframe.
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-20">
@@ -220,20 +114,29 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
                         </button>
 
                         <button
-                            onClick={handleWordExport}
+                            onClick={handleWordSynthesisExport}
                             className="p-4 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center gap-4 transition-all group"
                         >
                             <div className="w-10 h-10 bg-blue-600/10 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <FileText className="w-5 h-5" />
                             </div>
                             <div className="text-left">
-                                <span className="block font-bold text-slate-800 dark:text-slate-200">Exporter GRE (Word)</span>
-                                <span className="text-xs text-slate-500 dark:text-slate-400">Format .doc éditable</span>
+                                <span className="block font-bold text-slate-800 dark:text-slate-200">Exporter Synthèse (Word)</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">Format compact (.docx)</span>
                             </div>
                         </button>
 
-                        <button onClick={() => setPreviewType('word')} className="p-4 bg-blue-50 text-blue-800 border-2 border-blue-200 rounded-xl" id="preview-word-btn">
-                            Aperçu Word
+                        <button
+                            onClick={handleWordReportExport}
+                            className="p-4 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center gap-4 transition-all group"
+                        >
+                            <div className="w-10 h-10 bg-blue-600/10 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <FileText className="w-5 h-5" />
+                            </div>
+                            <div className="text-left">
+                                <span className="block font-bold text-slate-800 dark:text-slate-200">Exporter Rapport (Word)</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">Fiches détaillées (.docx)</span>
+                            </div>
                         </button>
 
                         <button
@@ -266,14 +169,14 @@ const DataPage: React.FC<DataPageProps> = ({ onNavigate }) => {
                             </p>
                             <div className="flex flex-col gap-2">
                                 <button
-                                    onClick={() => downloadFile(exportRisksToCSV(), 'risks', 'csv', 'text/csv')}
+                                    onClick={handleDownloadCSV}
                                     className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-slate-900 dark:text-slate-100"
                                 >
                                     <span>Format CSV (Toutes études)</span>
                                     <Download className="w-4 h-4 text-slate-400" />
                                 </button>
                                 <button
-                                    onClick={() => downloadFile(exportRisksToJSON(), 'backup_grxp', 'json', 'application/json')}
+                                    onClick={handleDownloadJSON}
                                     className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-slate-900 dark:text-slate-100"
                                 >
                                     <span>Format JSON (Base Complète)</span>

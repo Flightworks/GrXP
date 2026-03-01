@@ -46,6 +46,6 @@ describe('Word Export', () => {
         // Check styles
         expect(content).toContain('background-color: #FDE047'); // Yellow for Faible
         expect(content).toContain('font-weight: bold');
-        expect(content).toContain('border: 1px solid black');
+        expect(content).toContain('border: 1px solid #e2e8f0');
     });
 });
